@@ -8770,6 +8770,10 @@ h2 {
     display: block;
   }
 
+  .page-wrapper {
+    display: none;
+  }
+
   .team {
     padding-top: 0px;
     padding-bottom: 120px;
