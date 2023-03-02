@@ -5019,8 +5019,8 @@ h2 {
 
 .div-block-69.why-securo-container {
   margin-top: 60px;
-  grid-column-gap: 100px;
-  grid-row-gap: 100px;
+  grid-column-gap: 50px;
+  grid-row-gap: 50px;
 }
 
 .div-block-69.rfb-type-div {
@@ -6226,6 +6226,10 @@ h2 {
 
 .section-12.why-securo-section.our-culture {
   display: block;
+}
+
+.section-12.why-securo-section.our-culture {
+  margin-left: 40px;
 }
 
 .div-block-75 {
@@ -8282,6 +8286,26 @@ h2 {
   text-align: center;
 }
 
+.link-7 {
+  color: #fff;
+}
+
+.link-8 {
+  color: #fff;
+}
+
+.link-9 {
+  color: #fff;
+}
+
+.link-10 {
+  color: #fff;
+}
+
+.image-67 {
+  max-width: 60%;
+}
+
 @media screen and (min-width: 1280px) {
   .banner-container.about-banner.enterprise-header-text {
     margin-right: 0px;
@@ -8635,6 +8659,7 @@ h2 {
 
   .bg-color-511 {
     top: -700px;
+    display: none;
     height: 2000px;
     background-size: cover;
   }
@@ -8743,6 +8768,10 @@ h2 {
 
   .section-12.why-securo-section.our-culture {
     display: block;
+  }
+
+  .page-wrapper {
+    display: none;
   }
 
   .team {
