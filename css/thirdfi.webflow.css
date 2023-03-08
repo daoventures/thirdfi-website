@@ -10,6 +10,13 @@
   grid-column-gap: 16px;
 }
 
+body {
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  color: #333;
+  font-size: 14px;
+  line-height: 20px;
+}
+
 h2 {
   margin-top: 0px;
   margin-bottom: 10px;
@@ -2561,7 +2568,7 @@ h2 {
   display: -ms-flexbox;
   display: flex;
   min-width: 150px;
-  margin-right: -44px;
+  margin-right: -50px;
   padding-left: 0px;
   -webkit-box-orient: vertical;
   -webkit-box-direction: normal;
@@ -2583,7 +2590,7 @@ h2 {
 
 .div-block-9.quicklink {
   min-width: auto;
-  margin-right: 0px;
+  margin-right: 10px;
   padding-left: 0px;
   -webkit-box-pack: end;
   -webkit-justify-content: flex-end;
@@ -2593,7 +2600,7 @@ h2 {
 
 .div-block-9.uses-cases-footer {
   min-width: 210px;
-  margin-right: -75px;
+  margin-right: -80px;
   padding-left: 0px;
 }
 
