@@ -4492,6 +4492,10 @@ h2 {
   width: 1200px;
 }
 
+.heading-25.all-in-one-heading {
+  width: 550px;
+}
+
 .heading-25.gradient {
   margin-bottom: 20px;
   background-image: -webkit-gradient(linear, left top, right top, from(#43d9bb), to(#0299ed));
@@ -8315,6 +8319,20 @@ h2 {
   max-width: 60%;
 }
 
+.bold-text-7 {
+  padding-left: 0px;
+}
+
+.image-68 {
+  max-width: 100%;
+  margin-left: -25px;
+  padding-top: 8px;
+}
+
+.bold-text-8 {
+  margin-left: 0px;
+}
+
 @media screen and (min-width: 1280px) {
   .banner-container.about-banner.enterprise-header-text {
     margin-right: 0px;
@@ -9920,6 +9938,11 @@ h2 {
     width: auto;
   }
 
+  .heading-25.all-in-one-heading {
+    width: auto;
+    padding-left: 0px;
+  }
+
   .heading-25.gradient.sub-heading {
     text-align: center;
   }
@@ -10792,6 +10815,10 @@ h2 {
   .heading-25-copy.gradient.sub-heading {
     text-align: center;
   }
+
+  .bold-text-8 {
+    padding-left: 0px;
+  }
 }
 
 @media screen and (max-width: 767px) {
@@ -11485,6 +11512,10 @@ h2 {
 
   .heading-25.securo-is {
     line-height: 38px;
+  }
+
+  .heading-25.all-in-one-heading {
+    margin-left: 0px;
   }
 
   .heading-25.business-cta-header {
@@ -12970,7 +13001,10 @@ h2 {
   }
 
   .heading-25.all-in-one-heading {
+    width: auto;
     margin-bottom: 0px;
+    margin-left: 0px;
+    font-size: 28px;
   }
 
   .heading-25.enterprise-header {
@@ -13461,6 +13495,17 @@ h2 {
 
   .heading-25-copy.enterprise-header {
     margin-bottom: 0px;
+  }
+
+  .image-68 {
+    max-width: 100%;
+    margin-left: 0px;
+    padding-top: 0px;
+  }
+
+  .bold-text-8 {
+    margin-left: 0px;
+    text-align: center;
   }
 }
 
