@@ -2624,8 +2624,8 @@ a {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  grid-column-gap: 0px;
-  grid-row-gap: 0px;
+  grid-column-gap: 25px;
+  grid-row-gap: 25px;
 }
 
 .nav--link {
