@@ -2841,6 +2841,7 @@ a {
   margin-left: -3em;
   padding-top: 2em;
   padding-bottom: 2em;
+  background-color: #041a23;
 }
 
 .blx-b-wrap-grid-1 {
@@ -2873,13 +2874,13 @@ a {
   grid-row-gap: 1em;
   -ms-grid-columns: 1fr;
   grid-template-columns: 1fr;
-  -ms-grid-rows: auto auto auto auto;
-  grid-template-rows: auto auto auto auto;
+  -ms-grid-rows: auto auto auto;
+  grid-template-rows: auto auto auto;
 }
 
 .blx-b-container-grid-1.two {
-  -ms-grid-rows: auto auto auto;
-  grid-template-rows: auto auto auto;
+  -ms-grid-rows: auto;
+  grid-template-rows: auto;
 }
 
 .blx-b-grid-list-wrap-link-heading-1-1 {
@@ -2905,7 +2906,7 @@ a {
 }
 
 .blx-b-grid-link-1 {
-  color: #000;
+  color: #fff;
   font-size: 1.2em;
   line-height: 1.3em;
   font-weight: 500;
@@ -4247,6 +4248,7 @@ a {
     width: 100%;
     padding-top: 0.5em;
     padding-bottom: 0.5em;
+    flex-direction: column;
   }
 
   .blx-b-dropdown-1.hide {
@@ -4288,9 +4290,10 @@ a {
   }
 
   .blx-b-container-list-1.two {
-    width: 100%;
+    width: auto;
     margin-left: 0em;
     padding: 16px;
+    background-color: #041a23;
   }
 
   .blx-b-wrap-grid-1 {
@@ -4300,6 +4303,9 @@ a {
   }
 
   .blx-b-wrap-grid-1.one {
+    padding-bottom: 0em;
+    -ms-grid-row-align: auto;
+        align-self: auto;
     border-bottom-style: none;
   }
 
@@ -4311,8 +4317,17 @@ a {
     grid-row-gap: 1em;
     -ms-grid-columns: 1fr;
     grid-template-columns: 1fr;
-    -ms-grid-rows: auto auto auto auto;
-    grid-template-rows: auto auto auto auto;
+    -ms-grid-rows: auto auto auto;
+    grid-template-rows: auto auto auto;
+  }
+
+  .blx-b-container-grid-1.two {
+    -ms-grid-rows: auto;
+    grid-template-rows: auto;
+  }
+
+  .blx-b-grid-list-wrap-link-heading-1-1.hide {
+    color: #fff;
   }
 
   .blx-grid-heading-1 {
@@ -4321,6 +4336,7 @@ a {
   }
 
   .blx-b-grid-link-1 {
+    color: #fff;
     font-size: 1.5em;
   }
 
@@ -5670,8 +5686,6 @@ a {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    grid-column-gap: 20px;
-    grid-row-gap: 20px;
   }
 
   .blx-b-container-list-1 {
@@ -5684,8 +5698,10 @@ a {
   .blx-b-container-list-1.two {
     display: flex;
     margin-left: auto;
+    padding-top: 16px;
     padding-bottom: 16px;
     flex-direction: column;
+    background-color: #041a23;
   }
 
   .blx-b-wrap-grid-1 {
@@ -5696,7 +5712,8 @@ a {
   }
 
   .blx-b-container-grid-1 {
-    align-content: start;
+    justify-content: start;
+    align-content: center;
     grid-auto-rows: 0px;
     grid-row-gap: 1em;
     -ms-grid-rows: auto auto auto;
@@ -5704,8 +5721,8 @@ a {
   }
 
   .blx-b-container-grid-1.two {
-    -ms-grid-rows: auto auto;
-    grid-template-rows: auto auto;
+    -ms-grid-rows: auto;
+    grid-template-rows: auto;
   }
 
   .blx-grid-heading-1 {
@@ -5713,6 +5730,7 @@ a {
   }
 
   .blx-b-grid-link-1 {
+    color: #fff;
     font-size: 0.8em;
   }
 
