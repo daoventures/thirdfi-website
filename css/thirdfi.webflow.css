@@ -4295,7 +4295,7 @@ a {
   .blx-b-container-list-1.two {
     width: auto;
     margin-left: 0em;
-    padding: 16px;
+    padding: 40px 16px;
     background-color: #041a23;
   }
 
@@ -4316,8 +4316,8 @@ a {
     flex-direction: column;
     justify-items: center;
     align-items: center;
-    grid-column-gap: 2em;
-    grid-row-gap: 1em;
+    grid-column-gap: 3em;
+    grid-row-gap: 3em;
     -ms-grid-columns: 1fr;
     grid-template-columns: 1fr;
     -ms-grid-rows: auto auto auto;
@@ -4325,6 +4325,8 @@ a {
   }
 
   .blx-b-container-grid-1.two {
+    grid-column-gap: 3em;
+    grid-row-gap: 3em;
     -ms-grid-rows: auto;
     grid-template-rows: auto;
   }
@@ -4929,7 +4931,10 @@ a {
   }
 
   .flex-apart.align-left {
-    justify-content: center;
+    justify-content: space-around;
+    align-items: center;
+    grid-column-gap: 1px;
+    grid-row-gap: 1px;
   }
 
   .flex-apart.align-center {
@@ -5726,8 +5731,8 @@ a {
   .blx-b-container-list-1.two {
     display: flex;
     margin-left: auto;
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding-top: 40px;
+    padding-bottom: 40px;
     flex-direction: column;
     background-color: #041a23;
   }
@@ -5737,6 +5742,10 @@ a {
     padding-bottom: 0em;
     flex-direction: column;
     border-bottom-style: none;
+  }
+
+  .blx-b-wrap-grid-1.one {
+    padding-bottom: 0px;
   }
 
   .blx-b-container-grid-1 {
@@ -5749,6 +5758,8 @@ a {
   }
 
   .blx-b-container-grid-1.two {
+    justify-content: start;
+    grid-auto-flow: row;
     -ms-grid-rows: auto;
     grid-template-rows: auto;
   }
@@ -6223,17 +6234,6 @@ a {
   grid-row-end: span 1;
 }
 
-#w-node-_56da26f6-4135-f88f-1f1f-847e3db1aba5-3db1ab57 {
-  -ms-grid-column: span 1;
-      grid-column-start: span 1;
-  -ms-grid-column-span: 1;
-  grid-column-end: span 1;
-  -ms-grid-row: span 1;
-      grid-row-start: span 1;
-  -ms-grid-row-span: 1;
-  grid-row-end: span 1;
-}
-
 #w-node-_56da26f6-4135-f88f-1f1f-847e3db1aba9-3db1ab57 {
   -ms-grid-column: span 1;
       grid-column-start: span 1;
@@ -6257,17 +6257,6 @@ a {
 }
 
 #w-node-_56da26f6-4135-f88f-1f1f-847e3db1abb1-3db1ab57 {
-  -ms-grid-column: span 1;
-      grid-column-start: span 1;
-  -ms-grid-column-span: 1;
-  grid-column-end: span 1;
-  -ms-grid-row: span 1;
-      grid-row-start: span 1;
-  -ms-grid-row-span: 1;
-  grid-row-end: span 1;
-}
-
-#w-node-ae3ac8a4-9ed6-0bcf-5424-7e981d0e696b-3db1ab57 {
   -ms-grid-column: span 1;
       grid-column-start: span 1;
   -ms-grid-column-span: 1;
