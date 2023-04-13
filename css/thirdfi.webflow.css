@@ -4165,8 +4165,8 @@ a {
   .signup-wrapper {
     flex-direction: column;
     justify-content: center;
-    grid-column-gap: 1em;
-    grid-row-gap: 1em;
+    grid-column-gap: 2em;
+    grid-row-gap: 2em;
   }
 
   .nav--link {
@@ -4180,12 +4180,15 @@ a {
     margin-bottom: 1em;
     flex-direction: column;
     justify-content: center;
-    grid-column-gap: 1.5em;
-    grid-row-gap: 1.5em;
+    grid-column-gap: 2em;
+    grid-row-gap: 2em;
   }
 
   .nav-wrap {
-    padding-bottom: 2em;
+    padding-top: 5em;
+    padding-bottom: 5em;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
     background-color: rgba(0, 2, 9, 0.97);
   }
 
@@ -4386,6 +4389,10 @@ a {
   .grid-5 {
     -ms-grid-columns: 1fr 1fr;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .text-block-35 {
+    padding-top: 0.5em;
   }
 }
 
@@ -5649,7 +5656,7 @@ a {
   }
 
   .nav-wrap {
-    padding-bottom: 1em;
+    padding-bottom: 5em;
     background-color: rgba(0, 2, 9, 0.97);
   }
 
