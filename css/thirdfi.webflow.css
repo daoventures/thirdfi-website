@@ -4185,7 +4185,7 @@ a {
 
   .nav-wrap {
     padding-bottom: 2em;
-    background-color: rgba(0, 2, 9, 0.9);
+    background-color: rgba(0, 2, 9, 0.97);
   }
 
   .menu-icon-2 {
@@ -4245,6 +4245,12 @@ a {
   .blx-b-dropdown-1 {
     display: flex;
     width: 100%;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+  }
+
+  .blx-b-dropdown-1.hide {
+    display: none;
   }
 
   .blx-b-dropdown-open-1 {
@@ -5628,7 +5634,7 @@ a {
 
   .nav-wrap {
     padding-bottom: 1em;
-    background-color: rgba(0, 2, 9, 0.9);
+    background-color: rgba(0, 2, 9, 0.97);
   }
 
   .m-max-300px {
@@ -5649,6 +5655,8 @@ a {
 
   .blx-b-dropdown-1 {
     display: flex;
+    padding-top: 0em;
+    padding-bottom: 0em;
     flex-direction: column;
     text-align: center;
   }
