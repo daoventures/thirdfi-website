@@ -1,5 +1,5 @@
 <!DOCTYPE html><!--  This site was created in Webflow. https://www.webflow.com  -->
-<!--  Last Published: Mon Apr 24 2023 17:43:05 GMT+0000 (Coordinated Universal Time)  -->
+<!--  Last Published: Tue Apr 25 2023 19:30:09 GMT+0000 (Coordinated Universal Time)  -->
 <html data-wf-page="6446bf57f8980fba316ce257" data-wf-site="63f337249f8052b7c2e77906">
 <head>
   <meta charset="utf-8">
@@ -910,12 +910,11 @@ $('.w-dropdown').each(function() {
     });
 </script>
   <script>
+  var counts = JSON.parse(localStorage.getItem("counts"));
 	const API_URL = "https://api.thirdfi.org/api/v1/public";
 	async function getUserCount() {
-  	localStorage.setItem('test', 'gg');
-  	const span = document.getElementById("user-count");
+  	var span = document.getElementById("user-count");
         // check if the count object is already stored in local storage
-    const counts = JSON.parse(localStorage.getItem("counts"));
     if (counts && counts.userCount) {
       // if count is available in local storage, update the span with the saved count
       span.innerHTML = counts.userCount.toLocaleString();
@@ -924,32 +923,28 @@ $('.w-dropdown').each(function() {
       return;
     }
   	try {
-      const result = await axios.get(`${API_URL}/customers`);
-      const { data } = result.data;
+      var result = await axios.get(`${API_URL}/customers`);
+      var { data } = result.data;
       var formattedCount = data.toLocaleString();
-      if (counts) {
-      console.log('gg','abc', data);
+      if (counts && counts.userCount) {
         // update the count object in local storage
         counts.userCount = data;
       } else {
         // create a new count object in local storage
-        counts = { userCount: data };
+        counts = { userCount: data, ...counts };
       }
       // save the count object to local storage
-      localStorage.setItem("counts", JSON.stringify(counts));
-      console.log('gg','abxc');
+      await localStorage.setItem("counts", JSON.stringify(counts));
       span.innerHTML = formattedCount;
     } catch (ex) {
-    	console.log('what', ex);
-    	span.innerHTML = "16,305";
+    	span.innerHTML = "21,228";
     }
     span.classList.remove('spinner');
     span.style.color = "#71767d";
   }
   async function getApiCalls() {
- 		const span = document.getElementById("api-calls");
+ 		var span = document.getElementById("api-calls");
     // check if the count object is already stored in local storage
-    const counts = JSON.parse(localStorage.getItem("counts"));
     if (counts && counts.apiCount) {
       // if count is available in local storage, update the span with the saved count
       span.innerHTML = counts.apiCount.toLocaleString();
@@ -958,28 +953,27 @@ $('.w-dropdown').each(function() {
       return;
     }
   	try {
-  		const result = await axios.get(`${API_URL}/api-calls`);
-    	const { data } = result.data;
+  		var result = await axios.get(`${API_URL}/api-calls`);
+    	var { data } = result.data;
     	var formattedCount = data.toLocaleString();
-      if (counts) {
+      if (counts && counts.apiCount) {
         // update the count object in local storage
         counts.apiCount = data;
       } else {
         // create a new count object in local storage
-        counts = { apiCount: data };
+        counts = { apiCount: data, ...counts };
       }
       // save the count object to local storage
-      localStorage.setItem("counts", JSON.stringify(counts));
+      await localStorage.setItem("counts", JSON.stringify(counts));
 			span.innerHTML = formattedCount; 
     } catch (ex) {
-    	span.innerHTML = "293,721";
+    	span.innerHTML = "404,274";
     }
     span.classList.remove('spinner');
     span.style.color = "#71767d";
   }
   async function getTxCount() {
-    const span = document.getElementById("tx-count");
-    const counts = JSON.parse(localStorage.getItem("counts"));
+    var span = document.getElementById("tx-count");
     if (counts && counts.txCount) {
       // if count is available in local storage, update the span with the saved count
       span.innerHTML = counts.txCount.toLocaleString();
@@ -988,18 +982,18 @@ $('.w-dropdown').each(function() {
       return;
     }
     try {
-      const result = await axios.get(`${API_URL}/transactions/count`);
-      const { data } = result.data;
+      var result = await axios.get(`${API_URL}/transactions/count`);
+      var { data } = result.data;
       var formattedCount = data.toLocaleString();
-      if (counts) {
+      if (counts && counts.txCount) {
         // update the count object in local storage
         counts.txCount = data;
       } else {
         // create a new count object in local storage
-        counts = { txCount: data };
+        counts = { txCount: data, ...counts };
       }
       // save the count object to local storage
-      localStorage.setItem("counts", JSON.stringify(counts));
+      await localStorage.setItem("counts", JSON.stringify(counts));
       span.innerHTML = formattedCount;
     } catch (ex) {
     	span.innerHTML = "11,115";
@@ -1008,31 +1002,30 @@ $('.w-dropdown').each(function() {
     span.style.color = "#71767d";
   }
   async function getTxVol() {
-    const span = document.getElementById("tx-vol");
-    const counts = JSON.parse(localStorage.getItem("counts"));
+    var span = document.getElementById("tx-vol");
     if (counts && counts.txVol) {
       // if count is available in local storage, update the span with the saved count
-      span.innerHTML = counts.txVol.toLocaleString();
+      span.innerHTML = `$${counts.txVol.toLocaleString()}`;
       span.classList.remove("spinner");
       span.style.color = "#71767d";
       return;
     }
     try {
-      const result = await axios.get(`${API_URL}/transactions/volume`);
-      const { data } = result.data;
+      var result = await axios.get(`${API_URL}/transactions/volume`);
+      var { data } = result.data;
       var formattedCount = data.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-      if (counts) {
+      if (counts && counts.txVol) {
         // update the count object in local storage
         counts.txVol = data;
       } else {
         // create a new count object in local storage
-        counts = { txVol: data };
+        counts = { txVol: data, ...counts };
       }
       // save the count object to local storage
-      localStorage.setItem("counts", JSON.stringify(counts));
+      await localStorage.setItem("counts", JSON.stringify(counts));
       span.innerHTML = `$${formattedCount}`;
     } catch (ex) {
-    	span.innerHTML = "$34,666.20";
+    	span.innerHTML = "$59,425.20";
     }
     span.classList.remove('spinner');
     span.style.color = "#71767d";
