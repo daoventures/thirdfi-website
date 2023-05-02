@@ -1167,278 +1167,64 @@
     }
   });
 
-  // shared/render/plugins/BaseSiteModules/webflow-scroll.js
-  var require_webflow_scroll = __commonJS({
-    "shared/render/plugins/BaseSiteModules/webflow-scroll.js"(exports, module) {
+  // shared/render/plugins/BaseSiteModules/webflow-brand.js
+  var require_webflow_brand = __commonJS({
+    "shared/render/plugins/BaseSiteModules/webflow-brand.js"(exports, module) {
       var Webflow = require_webflow_lib();
-      Webflow.define("scroll", module.exports = function($) {
-        var NS_EVENTS = {
-          WF_CLICK_EMPTY: "click.wf-empty-link",
-          WF_CLICK_SCROLL: "click.wf-scroll"
-        };
-        var loc = window.location;
-        var history = inIframe() ? null : window.history;
-        var $win = $(window);
-        var $doc = $(document);
-        var $body = $(document.body);
-        var animate = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || function(fn) {
-          window.setTimeout(fn, 15);
-        };
-        var rootTag = Webflow.env("editor") ? ".w-editor-body" : "body";
-        var headerSelector = "header, " + rootTag + " > .header, " + rootTag + " > .w-nav:not([data-no-scroll])";
-        var emptyHrefSelector = 'a[href="#"]';
-        var localHrefSelector = 'a[href*="#"]:not(.w-tab-link):not(' + emptyHrefSelector + ")";
-        var scrollTargetOutlineCSS = '.wf-force-outline-none[tabindex="-1"]:focus{outline:none;}';
-        var focusStylesEl = document.createElement("style");
-        focusStylesEl.appendChild(document.createTextNode(scrollTargetOutlineCSS));
-        function inIframe() {
-          try {
-            return Boolean(window.frameElement);
-          } catch (e) {
-            return true;
-          }
-        }
-        var validHash = /^#[a-zA-Z0-9][\w:.-]*$/;
-        function linksToCurrentPage(link) {
-          return validHash.test(link.hash) && link.host + link.pathname === loc.host + loc.pathname;
-        }
-        const reducedMotionMediaQuery = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)");
-        function reducedMotionEnabled() {
-          return document.body.getAttribute("data-wf-scroll-motion") === "none" || reducedMotionMediaQuery.matches;
-        }
-        function setFocusable($el, action) {
-          var initialTabindex;
-          switch (action) {
-            case "add":
-              initialTabindex = $el.attr("tabindex");
-              if (initialTabindex) {
-                $el.attr("data-wf-tabindex-swap", initialTabindex);
-              } else {
-                $el.attr("tabindex", "-1");
-              }
-              break;
-            case "remove":
-              initialTabindex = $el.attr("data-wf-tabindex-swap");
-              if (initialTabindex) {
-                $el.attr("tabindex", initialTabindex);
-                $el.removeAttr("data-wf-tabindex-swap");
-              } else {
-                $el.removeAttr("tabindex");
-              }
-              break;
-          }
-          $el.toggleClass("wf-force-outline-none", action === "add");
-        }
-        function validateScroll(evt) {
-          var target = evt.currentTarget;
-          if (
-            // Bail if in Designer
-            Webflow.env("design") || // Ignore links being used by jQuery mobile
-            window.$.mobile && /(?:^|\s)ui-link(?:$|\s)/.test(target.className)
-          ) {
-            return;
-          }
-          var hash = linksToCurrentPage(target) ? target.hash : "";
-          if (hash === "")
-            return;
-          var $el = $(hash);
-          if (!$el.length) {
-            return;
-          }
-          if (evt) {
-            evt.preventDefault();
-            evt.stopPropagation();
-          }
-          updateHistory(hash, evt);
-          window.setTimeout(function() {
-            scroll($el, function setFocus() {
-              setFocusable($el, "add");
-              $el.get(0).focus({
-                preventScroll: true
-              });
-              setFocusable($el, "remove");
-            });
-          }, evt ? 0 : 300);
-        }
-        function updateHistory(hash) {
-          if (loc.hash !== hash && history && history.pushState && // Navigation breaks Chrome when the protocol is `file:`.
-          !(Webflow.env.chrome && loc.protocol === "file:")) {
-            var oldHash = history.state && history.state.hash;
-            if (oldHash !== hash) {
-              history.pushState({
-                hash
-              }, "", hash);
-            }
-          }
-        }
-        function scroll($targetEl, cb) {
-          var start = $win.scrollTop();
-          var end = calculateScrollEndPosition($targetEl);
-          if (start === end)
-            return;
-          var duration = calculateScrollDuration($targetEl, start, end);
-          var clock = Date.now();
-          var step = function() {
-            var elapsed = Date.now() - clock;
-            window.scroll(0, getY(start, end, elapsed, duration));
-            if (elapsed <= duration) {
-              animate(step);
-            } else if (typeof cb === "function") {
-              cb();
-            }
-          };
-          animate(step);
-        }
-        function calculateScrollEndPosition($targetEl) {
-          var $header = $(headerSelector);
-          var offsetY = $header.css("position") === "fixed" ? $header.outerHeight() : 0;
-          var end = $targetEl.offset().top - offsetY;
-          if ($targetEl.data("scroll") === "mid") {
-            var available = $win.height() - offsetY;
-            var elHeight = $targetEl.outerHeight();
-            if (elHeight < available) {
-              end -= Math.round((available - elHeight) / 2);
-            }
-          }
-          return end;
-        }
-        function calculateScrollDuration($targetEl, start, end) {
-          if (reducedMotionEnabled())
-            return 0;
-          var mult = 1;
-          $body.add($targetEl).each(function(_, el) {
-            var time = parseFloat(el.getAttribute("data-scroll-time"));
-            if (!isNaN(time) && time >= 0) {
-              mult = time;
-            }
-          });
-          return (472.143 * Math.log(Math.abs(start - end) + 125) - 2e3) * mult;
-        }
-        function getY(start, end, elapsed, duration) {
-          if (elapsed > duration) {
-            return end;
-          }
-          return start + (end - start) * ease(elapsed / duration);
-        }
-        function ease(t) {
-          return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-        }
-        function ready() {
-          var {
-            WF_CLICK_EMPTY,
-            WF_CLICK_SCROLL
-          } = NS_EVENTS;
-          $doc.on(WF_CLICK_SCROLL, localHrefSelector, validateScroll);
-          $doc.on(WF_CLICK_EMPTY, emptyHrefSelector, function(e) {
-            e.preventDefault();
-          });
-          document.head.insertBefore(focusStylesEl, document.head.firstChild);
-        }
-        return {
-          ready
-        };
-      });
-    }
-  });
-
-  // shared/render/plugins/BaseSiteModules/webflow-touch.js
-  var require_webflow_touch = __commonJS({
-    "shared/render/plugins/BaseSiteModules/webflow-touch.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      Webflow.define("touch", module.exports = function($) {
+      Webflow.define("brand", module.exports = function($) {
         var api = {};
-        var getSelection = window.getSelection;
-        $.event.special.tap = {
-          bindType: "click",
-          delegateType: "click"
+        var doc = document;
+        var $html = $("html");
+        var $body = $("body");
+        var namespace = ".w-webflow-badge";
+        var location = window.location;
+        var isPhantom = /PhantomJS/i.test(navigator.userAgent);
+        var fullScreenEvents = "fullscreenchange webkitfullscreenchange mozfullscreenchange msfullscreenchange";
+        var brandElement;
+        api.ready = function() {
+          var shouldBrand = $html.attr("data-wf-status");
+          var publishedDomain = $html.attr("data-wf-domain") || "";
+          if (/\.webflow\.io$/i.test(publishedDomain) && location.hostname !== publishedDomain) {
+            shouldBrand = true;
+          }
+          if (shouldBrand && !isPhantom) {
+            brandElement = brandElement || createBadge();
+            ensureBrand();
+            setTimeout(ensureBrand, 500);
+            $(doc).off(fullScreenEvents, onFullScreenChange).on(fullScreenEvents, onFullScreenChange);
+          }
         };
-        api.init = function(el) {
-          el = typeof el === "string" ? $(el).get(0) : el;
-          return el ? new Touch(el) : null;
-        };
-        function Touch(el) {
-          var active = false;
-          var useTouch = false;
-          var thresholdX = Math.min(Math.round(window.innerWidth * 0.04), 40);
-          var startX;
-          var lastX;
-          el.addEventListener("touchstart", start, false);
-          el.addEventListener("touchmove", move, false);
-          el.addEventListener("touchend", end, false);
-          el.addEventListener("touchcancel", cancel, false);
-          el.addEventListener("mousedown", start, false);
-          el.addEventListener("mousemove", move, false);
-          el.addEventListener("mouseup", end, false);
-          el.addEventListener("mouseout", cancel, false);
-          function start(evt) {
-            var touches = evt.touches;
-            if (touches && touches.length > 1) {
-              return;
-            }
-            active = true;
-            if (touches) {
-              useTouch = true;
-              startX = touches[0].clientX;
-            } else {
-              startX = evt.clientX;
-            }
-            lastX = startX;
-          }
-          function move(evt) {
-            if (!active) {
-              return;
-            }
-            if (useTouch && evt.type === "mousemove") {
-              evt.preventDefault();
-              evt.stopPropagation();
-              return;
-            }
-            var touches = evt.touches;
-            var x = touches ? touches[0].clientX : evt.clientX;
-            var velocityX = x - lastX;
-            lastX = x;
-            if (Math.abs(velocityX) > thresholdX && getSelection && String(getSelection()) === "") {
-              triggerEvent("swipe", evt, {
-                direction: velocityX > 0 ? "right" : "left"
-              });
-              cancel();
-            }
-          }
-          function end(evt) {
-            if (!active) {
-              return;
-            }
-            active = false;
-            if (useTouch && evt.type === "mouseup") {
-              evt.preventDefault();
-              evt.stopPropagation();
-              useTouch = false;
-              return;
-            }
-          }
-          function cancel() {
-            active = false;
-          }
-          function destroy() {
-            el.removeEventListener("touchstart", start, false);
-            el.removeEventListener("touchmove", move, false);
-            el.removeEventListener("touchend", end, false);
-            el.removeEventListener("touchcancel", cancel, false);
-            el.removeEventListener("mousedown", start, false);
-            el.removeEventListener("mousemove", move, false);
-            el.removeEventListener("mouseup", end, false);
-            el.removeEventListener("mouseout", cancel, false);
-            el = null;
-          }
-          this.destroy = destroy;
+        function onFullScreenChange() {
+          var fullScreen = doc.fullScreen || doc.mozFullScreen || doc.webkitIsFullScreen || doc.msFullscreenElement || Boolean(doc.webkitFullscreenElement);
+          $(brandElement).attr("style", fullScreen ? "display: none !important;" : "");
         }
-        function triggerEvent(type, evt, data) {
-          var newEvent = $.Event(type, {
-            originalEvent: evt
+        function createBadge() {
+          var $brand = $('<a class="w-webflow-badge"></a>').attr("href", "https://webflow.com?utm_campaign=brandjs");
+          var $logoArt = $("<img>").attr("src", "https://d3e54v103j8qbb.cloudfront.net/img/webflow-badge-icon.f67cd735e3.svg").attr("alt", "").css({
+            marginRight: "8px",
+            width: "16px"
           });
-          $(evt.target).trigger(newEvent, data);
+          var $logoText = $("<img>").attr("src", "https://d1otoma47x30pg.cloudfront.net/img/webflow-badge-text.6faa6a38cd.svg").attr("alt", "Made in Webflow");
+          $brand.append($logoArt, $logoText);
+          return $brand[0];
         }
-        api.instance = api.init(document);
+        function ensureBrand() {
+          var found = $body.children(namespace);
+          var match = found.length && found.get(0) === brandElement;
+          var inEditor = Webflow.env("editor");
+          if (match) {
+            if (inEditor) {
+              found.remove();
+            }
+            return;
+          }
+          if (found.length) {
+            found.remove();
+          }
+          if (!inEditor) {
+            $body.append(brandElement);
+          }
+        }
         return api;
       });
     }
@@ -1595,94 +1381,6 @@
     }
   });
 
-  // shared/render/plugins/BaseSiteModules/webflow-links.js
-  var require_webflow_links = __commonJS({
-    "shared/render/plugins/BaseSiteModules/webflow-links.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      Webflow.define("links", module.exports = function($, _) {
-        var api = {};
-        var $win = $(window);
-        var designer;
-        var inApp = Webflow.env();
-        var location = window.location;
-        var tempLink = document.createElement("a");
-        var linkCurrent = "w--current";
-        var indexPage = /index\.(html|php)$/;
-        var dirList = /\/$/;
-        var anchors;
-        var slug;
-        api.ready = api.design = api.preview = init;
-        function init() {
-          designer = inApp && Webflow.env("design");
-          slug = Webflow.env("slug") || location.pathname || "";
-          Webflow.scroll.off(scroll);
-          anchors = [];
-          var links = document.links;
-          for (var i = 0; i < links.length; ++i) {
-            select(links[i]);
-          }
-          if (anchors.length) {
-            Webflow.scroll.on(scroll);
-            scroll();
-          }
-        }
-        function select(link) {
-          var href = designer && link.getAttribute("href-disabled") || link.getAttribute("href");
-          tempLink.href = href;
-          if (href.indexOf(":") >= 0) {
-            return;
-          }
-          var $link = $(link);
-          if (tempLink.hash.length > 1 && tempLink.host + tempLink.pathname === location.host + location.pathname) {
-            if (!/^#[a-zA-Z0-9\-\_]+$/.test(tempLink.hash)) {
-              return;
-            }
-            var $section = $(tempLink.hash);
-            $section.length && anchors.push({
-              link: $link,
-              sec: $section,
-              active: false
-            });
-            return;
-          }
-          if (href === "#" || href === "") {
-            return;
-          }
-          var match = tempLink.href === location.href || href === slug || indexPage.test(href) && dirList.test(slug);
-          setClass($link, linkCurrent, match);
-        }
-        function scroll() {
-          var viewTop = $win.scrollTop();
-          var viewHeight = $win.height();
-          _.each(anchors, function(anchor) {
-            var $link = anchor.link;
-            var $section = anchor.sec;
-            var top = $section.offset().top;
-            var height = $section.outerHeight();
-            var offset = viewHeight * 0.5;
-            var active = $section.is(":visible") && top + height - offset >= viewTop && top + offset <= viewTop + viewHeight;
-            if (anchor.active === active) {
-              return;
-            }
-            anchor.active = active;
-            setClass($link, linkCurrent, active);
-          });
-        }
-        function setClass($elem, className, add) {
-          var exists = $elem.hasClass(className);
-          if (add && exists) {
-            return;
-          }
-          if (!add && !exists) {
-            return;
-          }
-          add ? $elem.addClass(className) : $elem.removeClass(className);
-        }
-        return api;
-      });
-    }
-  });
-
   // shared/render/plugins/BaseSiteModules/webflow-focus.js
   var require_webflow_focus = __commonJS({
     "shared/render/plugins/BaseSiteModules/webflow-focus.js"(exports, module) {
@@ -1825,1863 +1523,6 @@
       };
       $.extend(api.triggers, eventTriggers);
       module.exports = api;
-    }
-  });
-
-  // shared/render/plugins/BaseSiteModules/webflow-focus-within.js
-  var require_webflow_focus_within = __commonJS({
-    "shared/render/plugins/BaseSiteModules/webflow-focus-within.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      Webflow.define("focus-within", module.exports = function() {
-        function computeEventPath(node) {
-          var path = [node];
-          var parent = null;
-          while (parent = node.parentNode || node.host || node.defaultView) {
-            path.push(parent);
-            node = parent;
-          }
-          return path;
-        }
-        function addFocusWithinAttribute(el) {
-          if (typeof el.getAttribute !== "function" || el.getAttribute("data-wf-focus-within")) {
-            return;
-          }
-          el.setAttribute("data-wf-focus-within", "true");
-        }
-        function removeFocusWithinAttribute(el) {
-          if (typeof el.getAttribute !== "function" || !el.getAttribute("data-wf-focus-within")) {
-            return;
-          }
-          el.removeAttribute("data-wf-focus-within");
-        }
-        function loadFocusWithinPolyfill() {
-          var handler = function(e) {
-            var running;
-            function action() {
-              running = false;
-              if ("blur" === e.type) {
-                Array.prototype.slice.call(computeEventPath(e.target)).forEach(removeFocusWithinAttribute);
-              }
-              if ("focus" === e.type) {
-                Array.prototype.slice.call(computeEventPath(e.target)).forEach(addFocusWithinAttribute);
-              }
-            }
-            if (!running) {
-              window.requestAnimationFrame(action);
-              running = true;
-            }
-          };
-          document.addEventListener("focus", handler, true);
-          document.addEventListener("blur", handler, true);
-          addFocusWithinAttribute(document.body);
-          return true;
-        }
-        function ready() {
-          if (typeof document !== "undefined" && document.body.hasAttribute("data-wf-focus-within")) {
-            try {
-              document.querySelector(":focus-within");
-            } catch (e) {
-              loadFocusWithinPolyfill();
-            }
-          }
-        }
-        return {
-          ready
-        };
-      });
-    }
-  });
-
-  // shared/render/plugins/BaseSiteModules/webflow-brand.js
-  var require_webflow_brand = __commonJS({
-    "shared/render/plugins/BaseSiteModules/webflow-brand.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      Webflow.define("brand", module.exports = function($) {
-        var api = {};
-        var doc = document;
-        var $html = $("html");
-        var $body = $("body");
-        var namespace = ".w-webflow-badge";
-        var location = window.location;
-        var isPhantom = /PhantomJS/i.test(navigator.userAgent);
-        var fullScreenEvents = "fullscreenchange webkitfullscreenchange mozfullscreenchange msfullscreenchange";
-        var brandElement;
-        api.ready = function() {
-          var shouldBrand = $html.attr("data-wf-status");
-          var publishedDomain = $html.attr("data-wf-domain") || "";
-          if (/\.webflow\.io$/i.test(publishedDomain) && location.hostname !== publishedDomain) {
-            shouldBrand = true;
-          }
-          if (shouldBrand && !isPhantom) {
-            brandElement = brandElement || createBadge();
-            ensureBrand();
-            setTimeout(ensureBrand, 500);
-            $(doc).off(fullScreenEvents, onFullScreenChange).on(fullScreenEvents, onFullScreenChange);
-          }
-        };
-        function onFullScreenChange() {
-          var fullScreen = doc.fullScreen || doc.mozFullScreen || doc.webkitIsFullScreen || doc.msFullscreenElement || Boolean(doc.webkitFullscreenElement);
-          $(brandElement).attr("style", fullScreen ? "display: none !important;" : "");
-        }
-        function createBadge() {
-          var $brand = $('<a class="w-webflow-badge"></a>').attr("href", "https://webflow.com?utm_campaign=brandjs");
-          var $logoArt = $("<img>").attr("src", "https://d3e54v103j8qbb.cloudfront.net/img/webflow-badge-icon.f67cd735e3.svg").attr("alt", "").css({
-            marginRight: "8px",
-            width: "16px"
-          });
-          var $logoText = $("<img>").attr("src", "https://d1otoma47x30pg.cloudfront.net/img/webflow-badge-text.6faa6a38cd.svg").attr("alt", "Made in Webflow");
-          $brand.append($logoArt, $logoText);
-          return $brand[0];
-        }
-        function ensureBrand() {
-          var found = $body.children(namespace);
-          var match = found.length && found.get(0) === brandElement;
-          var inEditor = Webflow.env("editor");
-          if (match) {
-            if (inEditor) {
-              found.remove();
-            }
-            return;
-          }
-          if (found.length) {
-            found.remove();
-          }
-          if (!inEditor) {
-            $body.append(brandElement);
-          }
-        }
-        return api;
-      });
-    }
-  });
-
-  // shared/render/plugins/Dropdown/webflow-dropdown.js
-  var require_webflow_dropdown = __commonJS({
-    "shared/render/plugins/Dropdown/webflow-dropdown.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      var IXEvents = require_webflow_ix2_events();
-      var KEY_CODES = {
-        ARROW_LEFT: 37,
-        ARROW_UP: 38,
-        ARROW_RIGHT: 39,
-        ARROW_DOWN: 40,
-        ESCAPE: 27,
-        SPACE: 32,
-        ENTER: 13,
-        HOME: 36,
-        END: 35
-      };
-      var FORCE_CLOSE = true;
-      var INTERNAL_PAGE_LINK_HASHES_PATTERN = /^#[a-zA-Z0-9\-_]+$/;
-      Webflow.define("dropdown", module.exports = function($, _) {
-        var debounce = _.debounce;
-        var api = {};
-        var inApp = Webflow.env();
-        var inPreview = false;
-        var inDesigner;
-        var touch = Webflow.env.touch;
-        var namespace = ".w-dropdown";
-        var openStateClassName = "w--open";
-        var ix = IXEvents.triggers;
-        var defaultZIndex = 900;
-        var focusOutEvent = "focusout" + namespace;
-        var keydownEvent = "keydown" + namespace;
-        var mouseEnterEvent = "mouseenter" + namespace;
-        var mouseMoveEvent = "mousemove" + namespace;
-        var mouseLeaveEvent = "mouseleave" + namespace;
-        var mouseUpEvent = (touch ? "click" : "mouseup") + namespace;
-        var closeEvent = "w-close" + namespace;
-        var settingEvent = "setting" + namespace;
-        var $doc = $(document);
-        var $dropdowns;
-        api.ready = init;
-        api.design = function() {
-          if (inPreview) {
-            closeAll();
-          }
-          inPreview = false;
-          init();
-        };
-        api.preview = function() {
-          inPreview = true;
-          init();
-        };
-        function init() {
-          inDesigner = inApp && Webflow.env("design");
-          $dropdowns = $doc.find(namespace);
-          $dropdowns.each(build);
-        }
-        function build(i, el) {
-          var $el = $(el);
-          var data = $.data(el, namespace);
-          if (!data) {
-            data = $.data(el, namespace, {
-              open: false,
-              el: $el,
-              config: {},
-              selectedIdx: -1
-            });
-          }
-          data.toggle = data.el.children(".w-dropdown-toggle");
-          data.list = data.el.children(".w-dropdown-list");
-          data.links = data.list.find("a:not(.w-dropdown .w-dropdown a)");
-          data.complete = complete(data);
-          data.mouseLeave = makeMouseLeaveHandler(data);
-          data.mouseUpOutside = outside(data);
-          data.mouseMoveOutside = moveOutside(data);
-          configure(data);
-          var toggleId = data.toggle.attr("id");
-          var listId = data.list.attr("id");
-          if (!toggleId) {
-            toggleId = "w-dropdown-toggle-" + i;
-          }
-          if (!listId) {
-            listId = "w-dropdown-list-" + i;
-          }
-          data.toggle.attr("id", toggleId);
-          data.toggle.attr("aria-controls", listId);
-          data.toggle.attr("aria-haspopup", "menu");
-          data.toggle.attr("aria-expanded", "false");
-          data.toggle.find(".w-icon-dropdown-toggle").attr("aria-hidden", "true");
-          if (data.toggle.prop("tagName") !== "BUTTON") {
-            data.toggle.attr("role", "button");
-            if (!data.toggle.attr("tabindex")) {
-              data.toggle.attr("tabindex", "0");
-            }
-          }
-          data.list.attr("id", listId);
-          data.list.attr("aria-labelledby", toggleId);
-          data.links.each(function(idx, link) {
-            if (!link.hasAttribute("tabindex"))
-              link.setAttribute("tabindex", "0");
-            if (INTERNAL_PAGE_LINK_HASHES_PATTERN.test(link.hash)) {
-              link.addEventListener("click", close.bind(null, data));
-            }
-          });
-          data.el.off(namespace);
-          data.toggle.off(namespace);
-          if (data.nav) {
-            data.nav.off(namespace);
-          }
-          var initialToggler = makeToggler(data, FORCE_CLOSE);
-          if (inDesigner) {
-            data.el.on(settingEvent, makeSettingEventHandler(data));
-          }
-          if (!inDesigner) {
-            if (inApp) {
-              data.hovering = false;
-              close(data);
-            }
-            if (data.config.hover) {
-              data.toggle.on(mouseEnterEvent, makeMouseEnterHandler(data));
-            }
-            data.el.on(closeEvent, initialToggler);
-            data.el.on(keydownEvent, makeDropdownKeydownHandler(data));
-            data.el.on(focusOutEvent, makeDropdownFocusOutHandler(data));
-            data.toggle.on(mouseUpEvent, initialToggler);
-            data.toggle.on(keydownEvent, makeToggleKeydownHandler(data));
-            data.nav = data.el.closest(".w-nav");
-            data.nav.on(closeEvent, initialToggler);
-          }
-        }
-        function configure(data) {
-          var zIndex = Number(data.el.css("z-index"));
-          data.manageZ = zIndex === defaultZIndex || zIndex === defaultZIndex + 1;
-          data.config = {
-            hover: data.el.attr("data-hover") === "true" && !touch,
-            delay: data.el.attr("data-delay")
-          };
-        }
-        function makeSettingEventHandler(data) {
-          return function(evt, options) {
-            options = options || {};
-            configure(data);
-            options.open === true && open(data, true);
-            options.open === false && close(data, {
-              immediate: true
-            });
-          };
-        }
-        function makeToggler(data, forceClose) {
-          return debounce(function(evt) {
-            if (data.open || evt && evt.type === "w-close") {
-              return close(data, {
-                forceClose
-              });
-            }
-            open(data);
-          });
-        }
-        function open(data) {
-          if (data.open) {
-            return;
-          }
-          closeOthers(data);
-          data.open = true;
-          data.list.addClass(openStateClassName);
-          data.toggle.addClass(openStateClassName);
-          data.toggle.attr("aria-expanded", "true");
-          ix.intro(0, data.el[0]);
-          Webflow.redraw.up();
-          data.manageZ && data.el.css("z-index", defaultZIndex + 1);
-          var isEditor = Webflow.env("editor");
-          if (!inDesigner) {
-            $doc.on(mouseUpEvent, data.mouseUpOutside);
-          }
-          if (data.hovering && !isEditor) {
-            data.el.on(mouseLeaveEvent, data.mouseLeave);
-          }
-          if (data.hovering && isEditor) {
-            $doc.on(mouseMoveEvent, data.mouseMoveOutside);
-          }
-          window.clearTimeout(data.delayId);
-        }
-        function close(data, {
-          immediate,
-          forceClose
-        } = {}) {
-          if (!data.open) {
-            return;
-          }
-          if (data.config.hover && data.hovering && !forceClose) {
-            return;
-          }
-          data.toggle.attr("aria-expanded", "false");
-          data.open = false;
-          var config = data.config;
-          ix.outro(0, data.el[0]);
-          $doc.off(mouseUpEvent, data.mouseUpOutside);
-          $doc.off(mouseMoveEvent, data.mouseMoveOutside);
-          data.el.off(mouseLeaveEvent, data.mouseLeave);
-          window.clearTimeout(data.delayId);
-          if (!config.delay || immediate) {
-            return data.complete();
-          }
-          data.delayId = window.setTimeout(data.complete, config.delay);
-        }
-        function closeAll() {
-          $doc.find(namespace).each(function(i, el) {
-            $(el).triggerHandler(closeEvent);
-          });
-        }
-        function closeOthers(data) {
-          var self2 = data.el[0];
-          $dropdowns.each(function(i, other) {
-            var $other = $(other);
-            if ($other.is(self2) || $other.has(self2).length) {
-              return;
-            }
-            $other.triggerHandler(closeEvent);
-          });
-        }
-        function outside(data) {
-          if (data.mouseUpOutside) {
-            $doc.off(mouseUpEvent, data.mouseUpOutside);
-          }
-          return debounce(function(evt) {
-            if (!data.open) {
-              return;
-            }
-            var $target = $(evt.target);
-            if ($target.closest(".w-dropdown-toggle").length) {
-              return;
-            }
-            var isEventOutsideDropdowns = $.inArray(data.el[0], $target.parents(namespace)) === -1;
-            var isEditor = Webflow.env("editor");
-            if (isEventOutsideDropdowns) {
-              if (isEditor) {
-                var isEventOnDetachedSvg = $target.parents().length === 1 && $target.parents("svg").length === 1;
-                var isEventOnHoverControls = $target.parents(".w-editor-bem-EditorHoverControls").length;
-                if (isEventOnDetachedSvg || isEventOnHoverControls) {
-                  return;
-                }
-              }
-              close(data);
-            }
-          });
-        }
-        function complete(data) {
-          return function() {
-            data.list.removeClass(openStateClassName);
-            data.toggle.removeClass(openStateClassName);
-            data.manageZ && data.el.css("z-index", "");
-          };
-        }
-        function makeMouseEnterHandler(data) {
-          return function() {
-            data.hovering = true;
-            open(data);
-          };
-        }
-        function makeMouseLeaveHandler(data) {
-          return function() {
-            data.hovering = false;
-            if (!data.links.is(":focus")) {
-              close(data);
-            }
-          };
-        }
-        function moveOutside(data) {
-          return debounce(function(evt) {
-            if (!data.open) {
-              return;
-            }
-            var $target = $(evt.target);
-            var isEventOutsideDropdowns = $.inArray(data.el[0], $target.parents(namespace)) === -1;
-            if (isEventOutsideDropdowns) {
-              var isEventOnHoverControls = $target.parents(".w-editor-bem-EditorHoverControls").length;
-              var isEventOnHoverToolbar = $target.parents(".w-editor-bem-RTToolbar").length;
-              var $editorOverlay = $(".w-editor-bem-EditorOverlay");
-              var isDropdownInEdition = $editorOverlay.find(".w-editor-edit-outline").length || $editorOverlay.find(".w-editor-bem-RTToolbar").length;
-              if (isEventOnHoverControls || isEventOnHoverToolbar || isDropdownInEdition) {
-                return;
-              }
-              data.hovering = false;
-              close(data);
-            }
-          });
-        }
-        function makeDropdownKeydownHandler(data) {
-          return function(evt) {
-            if (inDesigner || !data.open) {
-              return;
-            }
-            data.selectedIdx = data.links.index(document.activeElement);
-            switch (evt.keyCode) {
-              case KEY_CODES.HOME: {
-                if (!data.open)
-                  return;
-                data.selectedIdx = 0;
-                focusSelectedLink(data);
-                return evt.preventDefault();
-              }
-              case KEY_CODES.END: {
-                if (!data.open)
-                  return;
-                data.selectedIdx = data.links.length - 1;
-                focusSelectedLink(data);
-                return evt.preventDefault();
-              }
-              case KEY_CODES.ESCAPE: {
-                close(data);
-                data.toggle.focus();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ARROW_RIGHT:
-              case KEY_CODES.ARROW_DOWN: {
-                data.selectedIdx = Math.min(data.links.length - 1, data.selectedIdx + 1);
-                focusSelectedLink(data);
-                return evt.preventDefault();
-              }
-              case KEY_CODES.ARROW_LEFT:
-              case KEY_CODES.ARROW_UP: {
-                data.selectedIdx = Math.max(-1, data.selectedIdx - 1);
-                focusSelectedLink(data);
-                return evt.preventDefault();
-              }
-            }
-          };
-        }
-        function focusSelectedLink(data) {
-          if (data.links[data.selectedIdx]) {
-            data.links[data.selectedIdx].focus();
-          }
-        }
-        function makeToggleKeydownHandler(data) {
-          var toggler = makeToggler(data, FORCE_CLOSE);
-          return function(evt) {
-            if (inDesigner)
-              return;
-            if (!data.open) {
-              switch (evt.keyCode) {
-                case KEY_CODES.ARROW_UP:
-                case KEY_CODES.ARROW_DOWN: {
-                  return evt.stopPropagation();
-                }
-              }
-            }
-            switch (evt.keyCode) {
-              case KEY_CODES.SPACE:
-              case KEY_CODES.ENTER: {
-                toggler();
-                evt.stopPropagation();
-                return evt.preventDefault();
-              }
-            }
-          };
-        }
-        function makeDropdownFocusOutHandler(data) {
-          return debounce(function(evt) {
-            var {
-              relatedTarget,
-              target
-            } = evt;
-            var menuEl = data.el[0];
-            var menuContainsFocus = menuEl.contains(relatedTarget) || menuEl.contains(target);
-            if (!menuContainsFocus) {
-              close(data);
-            }
-            return evt.stopPropagation();
-          });
-        }
-        return api;
-      });
-    }
-  });
-
-  // shared/render/plugins/Tabs/webflow-tabs.js
-  var require_webflow_tabs = __commonJS({
-    "shared/render/plugins/Tabs/webflow-tabs.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      var IXEvents = require_webflow_ix2_events();
-      Webflow.define("tabs", module.exports = function($) {
-        var api = {};
-        var tram = $.tram;
-        var $doc = $(document);
-        var $tabs;
-        var design;
-        var env = Webflow.env;
-        var safari = env.safari;
-        var inApp = env();
-        var tabAttr = "data-w-tab";
-        var paneAttr = "data-w-pane";
-        var namespace = ".w-tabs";
-        var linkCurrent = "w--current";
-        var tabActive = "w--tab-active";
-        var ix = IXEvents.triggers;
-        var inRedraw = false;
-        api.ready = api.design = api.preview = init;
-        api.redraw = function() {
-          inRedraw = true;
-          init();
-          inRedraw = false;
-        };
-        api.destroy = function() {
-          $tabs = $doc.find(namespace);
-          if (!$tabs.length) {
-            return;
-          }
-          $tabs.each(resetIX);
-          removeListeners();
-        };
-        function init() {
-          design = inApp && Webflow.env("design");
-          $tabs = $doc.find(namespace);
-          if (!$tabs.length) {
-            return;
-          }
-          $tabs.each(build);
-          if (Webflow.env("preview") && !inRedraw) {
-            $tabs.each(resetIX);
-          }
-          removeListeners();
-          addListeners();
-        }
-        function removeListeners() {
-          Webflow.redraw.off(api.redraw);
-        }
-        function addListeners() {
-          Webflow.redraw.on(api.redraw);
-        }
-        function resetIX(i, el) {
-          var data = $.data(el, namespace);
-          if (!data) {
-            return;
-          }
-          data.links && data.links.each(ix.reset);
-          data.panes && data.panes.each(ix.reset);
-        }
-        function build(i, el) {
-          var widgetHash = namespace.substr(1) + "-" + i;
-          var $el = $(el);
-          var data = $.data(el, namespace);
-          if (!data) {
-            data = $.data(el, namespace, {
-              el: $el,
-              config: {}
-            });
-          }
-          data.current = null;
-          data.tabIdentifier = widgetHash + "-" + tabAttr;
-          data.paneIdentifier = widgetHash + "-" + paneAttr;
-          data.menu = $el.children(".w-tab-menu");
-          data.links = data.menu.children(".w-tab-link");
-          data.content = $el.children(".w-tab-content");
-          data.panes = data.content.children(".w-tab-pane");
-          data.el.off(namespace);
-          data.links.off(namespace);
-          data.menu.attr("role", "tablist");
-          data.links.attr("tabindex", "-1");
-          configure(data);
-          if (!design) {
-            data.links.on("click" + namespace, linkSelect(data));
-            data.links.on("keydown" + namespace, handleLinkKeydown(data));
-            var $link = data.links.filter("." + linkCurrent);
-            var tab = $link.attr(tabAttr);
-            tab && changeTab(data, {
-              tab,
-              immediate: true
-            });
-          }
-        }
-        function configure(data) {
-          var config = {};
-          config.easing = data.el.attr("data-easing") || "ease";
-          var intro = parseInt(data.el.attr("data-duration-in"), 10);
-          intro = config.intro = intro === intro ? intro : 0;
-          var outro = parseInt(data.el.attr("data-duration-out"), 10);
-          outro = config.outro = outro === outro ? outro : 0;
-          config.immediate = !intro && !outro;
-          data.config = config;
-        }
-        function getActiveTabIdx(data) {
-          var tab = data.current;
-          return Array.prototype.findIndex.call(data.links, (t) => {
-            return t.getAttribute(tabAttr) === tab;
-          }, null);
-        }
-        function linkSelect(data) {
-          return function(evt) {
-            evt.preventDefault();
-            var tab = evt.currentTarget.getAttribute(tabAttr);
-            tab && changeTab(data, {
-              tab
-            });
-          };
-        }
-        function handleLinkKeydown(data) {
-          return function(evt) {
-            var currentIdx = getActiveTabIdx(data);
-            var keyName = evt.key;
-            var keyMap = {
-              ArrowLeft: currentIdx - 1,
-              ArrowUp: currentIdx - 1,
-              ArrowRight: currentIdx + 1,
-              ArrowDown: currentIdx + 1,
-              End: data.links.length - 1,
-              Home: 0
-            };
-            if (!(keyName in keyMap))
-              return;
-            evt.preventDefault();
-            var nextIdx = keyMap[keyName];
-            if (nextIdx === -1) {
-              nextIdx = data.links.length - 1;
-            }
-            if (nextIdx === data.links.length) {
-              nextIdx = 0;
-            }
-            var tabEl = data.links[nextIdx];
-            var tab = tabEl.getAttribute(tabAttr);
-            tab && changeTab(data, {
-              tab
-            });
-          };
-        }
-        function changeTab(data, options) {
-          options = options || {};
-          var config = data.config;
-          var easing = config.easing;
-          var tab = options.tab;
-          if (tab === data.current) {
-            return;
-          }
-          data.current = tab;
-          var currentTab;
-          data.links.each(function(i, el) {
-            var $el = $(el);
-            if (options.immediate || config.immediate) {
-              var pane = data.panes[i];
-              if (!el.id) {
-                el.id = data.tabIdentifier + "-" + i;
-              }
-              if (!pane.id) {
-                pane.id = data.paneIdentifier + "-" + i;
-              }
-              el.href = "#" + pane.id;
-              el.setAttribute("role", "tab");
-              el.setAttribute("aria-controls", pane.id);
-              el.setAttribute("aria-selected", "false");
-              pane.setAttribute("role", "tabpanel");
-              pane.setAttribute("aria-labelledby", el.id);
-            }
-            if (el.getAttribute(tabAttr) === tab) {
-              currentTab = el;
-              $el.addClass(linkCurrent).removeAttr("tabindex").attr({
-                "aria-selected": "true"
-              }).each(ix.intro);
-            } else if ($el.hasClass(linkCurrent)) {
-              $el.removeClass(linkCurrent).attr({
-                tabindex: "-1",
-                "aria-selected": "false"
-              }).each(ix.outro);
-            }
-          });
-          var targets = [];
-          var previous = [];
-          data.panes.each(function(i, el) {
-            var $el = $(el);
-            if (el.getAttribute(tabAttr) === tab) {
-              targets.push(el);
-            } else if ($el.hasClass(tabActive)) {
-              previous.push(el);
-            }
-          });
-          var $targets = $(targets);
-          var $previous = $(previous);
-          if (options.immediate || config.immediate) {
-            $targets.addClass(tabActive).each(ix.intro);
-            $previous.removeClass(tabActive);
-            if (!inRedraw) {
-              Webflow.redraw.up();
-            }
-            return;
-          } else {
-            var x = window.scrollX;
-            var y = window.scrollY;
-            currentTab.focus();
-            window.scrollTo(x, y);
-          }
-          if ($previous.length && config.outro) {
-            $previous.each(ix.outro);
-            tram($previous).add("opacity " + config.outro + "ms " + easing, {
-              fallback: safari
-            }).start({
-              opacity: 0
-            }).then(() => fadeIn(config, $previous, $targets));
-          } else {
-            fadeIn(config, $previous, $targets);
-          }
-        }
-        function fadeIn(config, $previous, $targets) {
-          $previous.removeClass(tabActive).css({
-            opacity: "",
-            transition: "",
-            transform: "",
-            width: "",
-            height: ""
-          });
-          $targets.addClass(tabActive).each(ix.intro);
-          Webflow.redraw.up();
-          if (!config.intro) {
-            return tram($targets).set({
-              opacity: 1
-            });
-          }
-          tram($targets).set({
-            opacity: 0
-          }).redraw().add("opacity " + config.intro + "ms " + config.easing, {
-            fallback: safari
-          }).start({
-            opacity: 1
-          });
-        }
-        return api;
-      });
-    }
-  });
-
-  // shared/render/plugins/Navbar/webflow-navbar.js
-  var require_webflow_navbar = __commonJS({
-    "shared/render/plugins/Navbar/webflow-navbar.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      var IXEvents = require_webflow_ix2_events();
-      var KEY_CODES = {
-        ARROW_LEFT: 37,
-        ARROW_UP: 38,
-        ARROW_RIGHT: 39,
-        ARROW_DOWN: 40,
-        ESCAPE: 27,
-        SPACE: 32,
-        ENTER: 13,
-        HOME: 36,
-        END: 35
-      };
-      Webflow.define("navbar", module.exports = function($, _) {
-        var api = {};
-        var tram = $.tram;
-        var $win = $(window);
-        var $doc = $(document);
-        var debounce = _.debounce;
-        var $body;
-        var $navbars;
-        var designer;
-        var inEditor;
-        var inApp = Webflow.env();
-        var overlay = '<div class="w-nav-overlay" data-wf-ignore />';
-        var namespace = ".w-nav";
-        var navbarOpenedButton = "w--open";
-        var navbarOpenedDropdown = "w--nav-dropdown-open";
-        var navbarOpenedDropdownToggle = "w--nav-dropdown-toggle-open";
-        var navbarOpenedDropdownList = "w--nav-dropdown-list-open";
-        var navbarOpenedLink = "w--nav-link-open";
-        var ix = IXEvents.triggers;
-        var menuSibling = $();
-        api.ready = api.design = api.preview = init;
-        api.destroy = function() {
-          menuSibling = $();
-          removeListeners();
-          if ($navbars && $navbars.length) {
-            $navbars.each(teardown);
-          }
-        };
-        function init() {
-          designer = inApp && Webflow.env("design");
-          inEditor = Webflow.env("editor");
-          $body = $(document.body);
-          $navbars = $doc.find(namespace);
-          if (!$navbars.length) {
-            return;
-          }
-          $navbars.each(build);
-          removeListeners();
-          addListeners();
-        }
-        function removeListeners() {
-          Webflow.resize.off(resizeAll);
-        }
-        function addListeners() {
-          Webflow.resize.on(resizeAll);
-        }
-        function resizeAll() {
-          $navbars.each(resize);
-        }
-        function build(i, el) {
-          var $el = $(el);
-          var data = $.data(el, namespace);
-          if (!data) {
-            data = $.data(el, namespace, {
-              open: false,
-              el: $el,
-              config: {},
-              selectedIdx: -1
-            });
-          }
-          data.menu = $el.find(".w-nav-menu");
-          data.links = data.menu.find(".w-nav-link");
-          data.dropdowns = data.menu.find(".w-dropdown");
-          data.dropdownToggle = data.menu.find(".w-dropdown-toggle");
-          data.dropdownList = data.menu.find(".w-dropdown-list");
-          data.button = $el.find(".w-nav-button");
-          data.container = $el.find(".w-container");
-          data.overlayContainerId = "w-nav-overlay-" + i;
-          data.outside = outside(data);
-          var navBrandLink = $el.find(".w-nav-brand");
-          if (navBrandLink && navBrandLink.attr("href") === "/" && navBrandLink.attr("aria-label") == null) {
-            navBrandLink.attr("aria-label", "home");
-          }
-          data.button.attr("style", "-webkit-user-select: text;");
-          if (data.button.attr("aria-label") == null) {
-            data.button.attr("aria-label", "menu");
-          }
-          data.button.attr("role", "button");
-          data.button.attr("tabindex", "0");
-          data.button.attr("aria-controls", data.overlayContainerId);
-          data.button.attr("aria-haspopup", "menu");
-          data.button.attr("aria-expanded", "false");
-          data.el.off(namespace);
-          data.button.off(namespace);
-          data.menu.off(namespace);
-          configure(data);
-          if (designer) {
-            removeOverlay(data);
-            data.el.on("setting" + namespace, handler(data));
-          } else {
-            addOverlay(data);
-            data.button.on("click" + namespace, toggle(data));
-            data.menu.on("click" + namespace, "a", navigate(data));
-            data.button.on("keydown" + namespace, makeToggleButtonKeyboardHandler(data));
-            data.el.on("keydown" + namespace, makeLinksKeyboardHandler(data));
-          }
-          resize(i, el);
-        }
-        function teardown(i, el) {
-          var data = $.data(el, namespace);
-          if (data) {
-            removeOverlay(data);
-            $.removeData(el, namespace);
-          }
-        }
-        function removeOverlay(data) {
-          if (!data.overlay) {
-            return;
-          }
-          close(data, true);
-          data.overlay.remove();
-          data.overlay = null;
-        }
-        function addOverlay(data) {
-          if (data.overlay) {
-            return;
-          }
-          data.overlay = $(overlay).appendTo(data.el);
-          data.overlay.attr("id", data.overlayContainerId);
-          data.parent = data.menu.parent();
-          close(data, true);
-        }
-        function configure(data) {
-          var config = {};
-          var old = data.config || {};
-          var animation = config.animation = data.el.attr("data-animation") || "default";
-          config.animOver = /^over/.test(animation);
-          config.animDirect = /left$/.test(animation) ? -1 : 1;
-          if (old.animation !== animation) {
-            data.open && _.defer(reopen, data);
-          }
-          config.easing = data.el.attr("data-easing") || "ease";
-          config.easing2 = data.el.attr("data-easing2") || "ease";
-          var duration = data.el.attr("data-duration");
-          config.duration = duration != null ? Number(duration) : 400;
-          config.docHeight = data.el.attr("data-doc-height");
-          data.config = config;
-        }
-        function handler(data) {
-          return function(evt, options) {
-            options = options || {};
-            var winWidth = $win.width();
-            configure(data);
-            options.open === true && open(data, true);
-            options.open === false && close(data, true);
-            data.open && _.defer(function() {
-              if (winWidth !== $win.width()) {
-                reopen(data);
-              }
-            });
-          };
-        }
-        function makeToggleButtonKeyboardHandler(data) {
-          return function(evt) {
-            switch (evt.keyCode) {
-              case KEY_CODES.SPACE:
-              case KEY_CODES.ENTER: {
-                toggle(data)();
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ESCAPE: {
-                close(data);
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ARROW_RIGHT:
-              case KEY_CODES.ARROW_DOWN:
-              case KEY_CODES.HOME:
-              case KEY_CODES.END: {
-                if (!data.open) {
-                  evt.preventDefault();
-                  return evt.stopPropagation();
-                }
-                if (evt.keyCode === KEY_CODES.END) {
-                  data.selectedIdx = data.links.length - 1;
-                } else {
-                  data.selectedIdx = 0;
-                }
-                focusSelectedLink(data);
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-            }
-          };
-        }
-        function makeLinksKeyboardHandler(data) {
-          return function(evt) {
-            if (!data.open) {
-              return;
-            }
-            data.selectedIdx = data.links.index(document.activeElement);
-            switch (evt.keyCode) {
-              case KEY_CODES.HOME:
-              case KEY_CODES.END: {
-                if (evt.keyCode === KEY_CODES.END) {
-                  data.selectedIdx = data.links.length - 1;
-                } else {
-                  data.selectedIdx = 0;
-                }
-                focusSelectedLink(data);
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ESCAPE: {
-                close(data);
-                data.button.focus();
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ARROW_LEFT:
-              case KEY_CODES.ARROW_UP: {
-                data.selectedIdx = Math.max(-1, data.selectedIdx - 1);
-                focusSelectedLink(data);
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-              case KEY_CODES.ARROW_RIGHT:
-              case KEY_CODES.ARROW_DOWN: {
-                data.selectedIdx = Math.min(data.links.length - 1, data.selectedIdx + 1);
-                focusSelectedLink(data);
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-            }
-          };
-        }
-        function focusSelectedLink(data) {
-          if (data.links[data.selectedIdx]) {
-            var selectedElement = data.links[data.selectedIdx];
-            selectedElement.focus();
-            navigate(selectedElement);
-          }
-        }
-        function reopen(data) {
-          if (!data.open) {
-            return;
-          }
-          close(data, true);
-          open(data, true);
-        }
-        function toggle(data) {
-          return debounce(function() {
-            data.open ? close(data) : open(data);
-          });
-        }
-        function navigate(data) {
-          return function(evt) {
-            var link = $(this);
-            var href = link.attr("href");
-            if (!Webflow.validClick(evt.currentTarget)) {
-              evt.preventDefault();
-              return;
-            }
-            if (href && href.indexOf("#") === 0 && data.open) {
-              close(data);
-            }
-          };
-        }
-        function outside(data) {
-          if (data.outside) {
-            $doc.off("click" + namespace, data.outside);
-          }
-          return function(evt) {
-            var $target = $(evt.target);
-            if (inEditor && $target.closest(".w-editor-bem-EditorOverlay").length) {
-              return;
-            }
-            outsideDebounced(data, $target);
-          };
-        }
-        var outsideDebounced = debounce(function(data, $target) {
-          if (!data.open) {
-            return;
-          }
-          var menu = $target.closest(".w-nav-menu");
-          if (!data.menu.is(menu)) {
-            close(data);
-          }
-        });
-        function resize(i, el) {
-          var data = $.data(el, namespace);
-          var collapsed = data.collapsed = data.button.css("display") !== "none";
-          if (data.open && !collapsed && !designer) {
-            close(data, true);
-          }
-          if (data.container.length) {
-            var updateEachMax = updateMax(data);
-            data.links.each(updateEachMax);
-            data.dropdowns.each(updateEachMax);
-          }
-          if (data.open) {
-            setOverlayHeight(data);
-          }
-        }
-        var maxWidth = "max-width";
-        function updateMax(data) {
-          var containMax = data.container.css(maxWidth);
-          if (containMax === "none") {
-            containMax = "";
-          }
-          return function(i, link) {
-            link = $(link);
-            link.css(maxWidth, "");
-            if (link.css(maxWidth) === "none") {
-              link.css(maxWidth, containMax);
-            }
-          };
-        }
-        function addMenuOpen(i, el) {
-          el.setAttribute("data-nav-menu-open", "");
-        }
-        function removeMenuOpen(i, el) {
-          el.removeAttribute("data-nav-menu-open");
-        }
-        function open(data, immediate) {
-          if (data.open) {
-            return;
-          }
-          data.open = true;
-          data.menu.each(addMenuOpen);
-          data.links.addClass(navbarOpenedLink);
-          data.dropdowns.addClass(navbarOpenedDropdown);
-          data.dropdownToggle.addClass(navbarOpenedDropdownToggle);
-          data.dropdownList.addClass(navbarOpenedDropdownList);
-          data.button.addClass(navbarOpenedButton);
-          var config = data.config;
-          var animation = config.animation;
-          if (animation === "none" || !tram.support.transform || config.duration <= 0) {
-            immediate = true;
-          }
-          var bodyHeight = setOverlayHeight(data);
-          var menuHeight = data.menu.outerHeight(true);
-          var menuWidth = data.menu.outerWidth(true);
-          var navHeight = data.el.height();
-          var navbarEl = data.el[0];
-          resize(0, navbarEl);
-          ix.intro(0, navbarEl);
-          Webflow.redraw.up();
-          if (!designer) {
-            $doc.on("click" + namespace, data.outside);
-          }
-          if (immediate) {
-            complete();
-            return;
-          }
-          var transConfig = "transform " + config.duration + "ms " + config.easing;
-          if (data.overlay) {
-            menuSibling = data.menu.prev();
-            data.overlay.show().append(data.menu);
-          }
-          if (config.animOver) {
-            tram(data.menu).add(transConfig).set({
-              x: config.animDirect * menuWidth,
-              height: bodyHeight
-            }).start({
-              x: 0
-            }).then(complete);
-            data.overlay && data.overlay.width(menuWidth);
-            return;
-          }
-          var offsetY = navHeight + menuHeight;
-          tram(data.menu).add(transConfig).set({
-            y: -offsetY
-          }).start({
-            y: 0
-          }).then(complete);
-          function complete() {
-            data.button.attr("aria-expanded", "true");
-          }
-        }
-        function setOverlayHeight(data) {
-          var config = data.config;
-          var bodyHeight = config.docHeight ? $doc.height() : $body.height();
-          if (config.animOver) {
-            data.menu.height(bodyHeight);
-          } else if (data.el.css("position") !== "fixed") {
-            bodyHeight -= data.el.outerHeight(true);
-          }
-          data.overlay && data.overlay.height(bodyHeight);
-          return bodyHeight;
-        }
-        function close(data, immediate) {
-          if (!data.open) {
-            return;
-          }
-          data.open = false;
-          data.button.removeClass(navbarOpenedButton);
-          var config = data.config;
-          if (config.animation === "none" || !tram.support.transform || config.duration <= 0) {
-            immediate = true;
-          }
-          ix.outro(0, data.el[0]);
-          $doc.off("click" + namespace, data.outside);
-          if (immediate) {
-            tram(data.menu).stop();
-            complete();
-            return;
-          }
-          var transConfig = "transform " + config.duration + "ms " + config.easing2;
-          var menuHeight = data.menu.outerHeight(true);
-          var menuWidth = data.menu.outerWidth(true);
-          var navHeight = data.el.height();
-          if (config.animOver) {
-            tram(data.menu).add(transConfig).start({
-              x: menuWidth * config.animDirect
-            }).then(complete);
-            return;
-          }
-          var offsetY = navHeight + menuHeight;
-          tram(data.menu).add(transConfig).start({
-            y: -offsetY
-          }).then(complete);
-          function complete() {
-            data.menu.height("");
-            tram(data.menu).set({
-              x: 0,
-              y: 0
-            });
-            data.menu.each(removeMenuOpen);
-            data.links.removeClass(navbarOpenedLink);
-            data.dropdowns.removeClass(navbarOpenedDropdown);
-            data.dropdownToggle.removeClass(navbarOpenedDropdownToggle);
-            data.dropdownList.removeClass(navbarOpenedDropdownList);
-            if (data.overlay && data.overlay.children().length) {
-              menuSibling.length ? data.menu.insertAfter(menuSibling) : data.menu.prependTo(data.parent);
-              data.overlay.attr("style", "").hide();
-            }
-            data.el.triggerHandler("w-close");
-            data.button.attr("aria-expanded", "false");
-          }
-        }
-        return api;
-      });
-    }
-  });
-
-  // shared/render/plugins/Slider/webflow-slider.js
-  var require_webflow_slider = __commonJS({
-    "shared/render/plugins/Slider/webflow-slider.js"(exports, module) {
-      var Webflow = require_webflow_lib();
-      var IXEvents = require_webflow_ix2_events();
-      var KEY_CODES = {
-        ARROW_LEFT: 37,
-        ARROW_UP: 38,
-        ARROW_RIGHT: 39,
-        ARROW_DOWN: 40,
-        SPACE: 32,
-        ENTER: 13,
-        HOME: 36,
-        END: 35
-      };
-      var FOCUSABLE_SELECTOR = 'a[href], area[href], [role="button"], input, select, textarea, button, iframe, object, embed, *[tabindex], *[contenteditable]';
-      Webflow.define("slider", module.exports = function($, _) {
-        var api = {};
-        var tram = $.tram;
-        var $doc = $(document);
-        var $sliders;
-        var designer;
-        var inApp = Webflow.env();
-        var namespace = ".w-slider";
-        var dot = '<div class="w-slider-dot" data-wf-ignore />';
-        var ariaLiveLabelHtml = '<div aria-live="off" aria-atomic="true" class="w-slider-aria-label" data-wf-ignore />';
-        var forceShow = "w-slider-force-show";
-        var ix = IXEvents.triggers;
-        var fallback;
-        var inRedraw = false;
-        api.ready = function() {
-          designer = Webflow.env("design");
-          init();
-        };
-        api.design = function() {
-          designer = true;
-          setTimeout(init, 1e3);
-        };
-        api.preview = function() {
-          designer = false;
-          init();
-        };
-        api.redraw = function() {
-          inRedraw = true;
-          init();
-          inRedraw = false;
-        };
-        api.destroy = removeListeners;
-        function init() {
-          $sliders = $doc.find(namespace);
-          if (!$sliders.length) {
-            return;
-          }
-          $sliders.each(build);
-          if (fallback) {
-            return;
-          }
-          removeListeners();
-          addListeners();
-        }
-        function removeListeners() {
-          Webflow.resize.off(renderAll);
-          Webflow.redraw.off(api.redraw);
-        }
-        function addListeners() {
-          Webflow.resize.on(renderAll);
-          Webflow.redraw.on(api.redraw);
-        }
-        function renderAll() {
-          $sliders.filter(":visible").each(render);
-        }
-        function build(i, el) {
-          var $el = $(el);
-          var data = $.data(el, namespace);
-          if (!data) {
-            data = $.data(el, namespace, {
-              index: 0,
-              depth: 1,
-              hasFocus: {
-                keyboard: false,
-                mouse: false
-              },
-              el: $el,
-              config: {}
-            });
-          }
-          data.mask = $el.children(".w-slider-mask");
-          data.left = $el.children(".w-slider-arrow-left");
-          data.right = $el.children(".w-slider-arrow-right");
-          data.nav = $el.children(".w-slider-nav");
-          data.slides = data.mask.children(".w-slide");
-          data.slides.each(ix.reset);
-          if (inRedraw) {
-            data.maskWidth = 0;
-          }
-          if ($el.attr("role") === void 0) {
-            $el.attr("role", "region");
-          }
-          if ($el.attr("aria-label") === void 0) {
-            $el.attr("aria-label", "carousel");
-          }
-          var slideViewId = data.mask.attr("id");
-          if (!slideViewId) {
-            slideViewId = "w-slider-mask-" + i;
-            data.mask.attr("id", slideViewId);
-          }
-          if (!designer && !data.ariaLiveLabel) {
-            data.ariaLiveLabel = $(ariaLiveLabelHtml).appendTo(data.mask);
-          }
-          data.left.attr("role", "button");
-          data.left.attr("tabindex", "0");
-          data.left.attr("aria-controls", slideViewId);
-          if (data.left.attr("aria-label") === void 0) {
-            data.left.attr("aria-label", "previous slide");
-          }
-          data.right.attr("role", "button");
-          data.right.attr("tabindex", "0");
-          data.right.attr("aria-controls", slideViewId);
-          if (data.right.attr("aria-label") === void 0) {
-            data.right.attr("aria-label", "next slide");
-          }
-          if (!tram.support.transform) {
-            data.left.hide();
-            data.right.hide();
-            data.nav.hide();
-            fallback = true;
-            return;
-          }
-          data.el.off(namespace);
-          data.left.off(namespace);
-          data.right.off(namespace);
-          data.nav.off(namespace);
-          configure(data);
-          if (designer) {
-            data.el.on("setting" + namespace, handler(data));
-            stopTimer(data);
-            data.hasTimer = false;
-          } else {
-            data.el.on("swipe" + namespace, handler(data));
-            data.left.on("click" + namespace, previousFunction(data));
-            data.right.on("click" + namespace, next(data));
-            data.left.on("keydown" + namespace, keyboardSlideButtonsFunction(data, previousFunction));
-            data.right.on("keydown" + namespace, keyboardSlideButtonsFunction(data, next));
-            data.nav.on("keydown" + namespace, "> div", handler(data));
-            if (data.config.autoplay && !data.hasTimer) {
-              data.hasTimer = true;
-              data.timerCount = 1;
-              startTimer(data);
-            }
-            data.el.on("mouseenter" + namespace, hasFocus(data, true, "mouse"));
-            data.el.on("focusin" + namespace, hasFocus(data, true, "keyboard"));
-            data.el.on("mouseleave" + namespace, hasFocus(data, false, "mouse"));
-            data.el.on("focusout" + namespace, hasFocus(data, false, "keyboard"));
-          }
-          data.nav.on("click" + namespace, "> div", handler(data));
-          if (!inApp) {
-            data.mask.contents().filter(function() {
-              return this.nodeType === 3;
-            }).remove();
-          }
-          var $elHidden = $el.filter(":hidden");
-          $elHidden.addClass(forceShow);
-          var $elHiddenParents = $el.parents(":hidden");
-          $elHiddenParents.addClass(forceShow);
-          if (!inRedraw) {
-            render(i, el);
-          }
-          $elHidden.removeClass(forceShow);
-          $elHiddenParents.removeClass(forceShow);
-        }
-        function configure(data) {
-          var config = {};
-          config.crossOver = 0;
-          config.animation = data.el.attr("data-animation") || "slide";
-          if (config.animation === "outin") {
-            config.animation = "cross";
-            config.crossOver = 0.5;
-          }
-          config.easing = data.el.attr("data-easing") || "ease";
-          var duration = data.el.attr("data-duration");
-          config.duration = duration != null ? parseInt(duration, 10) : 500;
-          if (isAttrTrue(data.el.attr("data-infinite"))) {
-            config.infinite = true;
-          }
-          if (isAttrTrue(data.el.attr("data-disable-swipe"))) {
-            config.disableSwipe = true;
-          }
-          if (isAttrTrue(data.el.attr("data-hide-arrows"))) {
-            config.hideArrows = true;
-          } else if (data.config.hideArrows) {
-            data.left.show();
-            data.right.show();
-          }
-          if (isAttrTrue(data.el.attr("data-autoplay"))) {
-            config.autoplay = true;
-            config.delay = parseInt(data.el.attr("data-delay"), 10) || 2e3;
-            config.timerMax = parseInt(data.el.attr("data-autoplay-limit"), 10);
-            var touchEvents = "mousedown" + namespace + " touchstart" + namespace;
-            if (!designer) {
-              data.el.off(touchEvents).one(touchEvents, function() {
-                stopTimer(data);
-              });
-            }
-          }
-          var arrowWidth = data.right.width();
-          config.edge = arrowWidth ? arrowWidth + 40 : 100;
-          data.config = config;
-        }
-        function isAttrTrue(value) {
-          return value === "1" || value === "true";
-        }
-        function hasFocus(data, focusIn, eventType) {
-          return function(evt) {
-            if (!focusIn) {
-              if ($.contains(data.el.get(0), evt.relatedTarget)) {
-                return;
-              }
-              data.hasFocus[eventType] = focusIn;
-              if (data.hasFocus.mouse && eventType === "keyboard" || data.hasFocus.keyboard && eventType === "mouse") {
-                return;
-              }
-            } else {
-              data.hasFocus[eventType] = focusIn;
-            }
-            if (focusIn) {
-              data.ariaLiveLabel.attr("aria-live", "polite");
-              if (data.hasTimer) {
-                stopTimer(data);
-              }
-            } else {
-              data.ariaLiveLabel.attr("aria-live", "off");
-              if (data.hasTimer) {
-                startTimer(data);
-              }
-            }
-            return;
-          };
-        }
-        function keyboardSlideButtonsFunction(data, directionFunction) {
-          return function(evt) {
-            switch (evt.keyCode) {
-              case KEY_CODES.SPACE:
-              case KEY_CODES.ENTER: {
-                directionFunction(data)();
-                evt.preventDefault();
-                return evt.stopPropagation();
-              }
-            }
-          };
-        }
-        function previousFunction(data) {
-          return function() {
-            change(data, {
-              index: data.index - 1,
-              vector: -1
-            });
-          };
-        }
-        function next(data) {
-          return function() {
-            change(data, {
-              index: data.index + 1,
-              vector: 1
-            });
-          };
-        }
-        function select(data, value) {
-          var found = null;
-          if (value === data.slides.length) {
-            init();
-            layout(data);
-          }
-          _.each(data.anchors, function(anchor, index) {
-            $(anchor.els).each(function(i, el) {
-              if ($(el).index() === value) {
-                found = index;
-              }
-            });
-          });
-          if (found != null) {
-            change(data, {
-              index: found,
-              immediate: true
-            });
-          }
-        }
-        function startTimer(data) {
-          stopTimer(data);
-          var config = data.config;
-          var timerMax = config.timerMax;
-          if (timerMax && data.timerCount++ > timerMax) {
-            return;
-          }
-          data.timerId = window.setTimeout(function() {
-            if (data.timerId == null || designer) {
-              return;
-            }
-            next(data)();
-            startTimer(data);
-          }, config.delay);
-        }
-        function stopTimer(data) {
-          window.clearTimeout(data.timerId);
-          data.timerId = null;
-        }
-        function handler(data) {
-          return function(evt, options) {
-            options = options || {};
-            var config = data.config;
-            if (designer && evt.type === "setting") {
-              if (options.select === "prev") {
-                return previousFunction(data)();
-              }
-              if (options.select === "next") {
-                return next(data)();
-              }
-              configure(data);
-              layout(data);
-              if (options.select == null) {
-                return;
-              }
-              select(data, options.select);
-              return;
-            }
-            if (evt.type === "swipe") {
-              if (config.disableSwipe) {
-                return;
-              }
-              if (Webflow.env("editor")) {
-                return;
-              }
-              if (options.direction === "left") {
-                return next(data)();
-              }
-              if (options.direction === "right") {
-                return previousFunction(data)();
-              }
-              return;
-            }
-            if (data.nav.has(evt.target).length) {
-              var index = $(evt.target).index();
-              if (evt.type === "click") {
-                change(data, {
-                  index
-                });
-              }
-              if (evt.type === "keydown") {
-                switch (evt.keyCode) {
-                  case KEY_CODES.ENTER:
-                  case KEY_CODES.SPACE: {
-                    change(data, {
-                      index
-                    });
-                    evt.preventDefault();
-                    break;
-                  }
-                  case KEY_CODES.ARROW_LEFT:
-                  case KEY_CODES.ARROW_UP: {
-                    focusDot(data.nav, Math.max(index - 1, 0));
-                    evt.preventDefault();
-                    break;
-                  }
-                  case KEY_CODES.ARROW_RIGHT:
-                  case KEY_CODES.ARROW_DOWN: {
-                    focusDot(data.nav, Math.min(index + 1, data.pages));
-                    evt.preventDefault();
-                    break;
-                  }
-                  case KEY_CODES.HOME: {
-                    focusDot(data.nav, 0);
-                    evt.preventDefault();
-                    break;
-                  }
-                  case KEY_CODES.END: {
-                    focusDot(data.nav, data.pages);
-                    evt.preventDefault();
-                    break;
-                  }
-                  default: {
-                    return;
-                  }
-                }
-              }
-            }
-          };
-        }
-        function focusDot($nav, index) {
-          var $active = $nav.children().eq(index).focus();
-          $nav.children().not($active);
-        }
-        function change(data, options) {
-          options = options || {};
-          var config = data.config;
-          var anchors = data.anchors;
-          data.previous = data.index;
-          var index = options.index;
-          var shift = {};
-          if (index < 0) {
-            index = anchors.length - 1;
-            if (config.infinite) {
-              shift.x = -data.endX;
-              shift.from = 0;
-              shift.to = anchors[0].width;
-            }
-          } else if (index >= anchors.length) {
-            index = 0;
-            if (config.infinite) {
-              shift.x = anchors[anchors.length - 1].width;
-              shift.from = -anchors[anchors.length - 1].x;
-              shift.to = shift.from - shift.x;
-            }
-          }
-          data.index = index;
-          var $active = data.nav.children().eq(index).addClass("w-active").attr("aria-pressed", "true").attr("tabindex", "0");
-          data.nav.children().not($active).removeClass("w-active").attr("aria-pressed", "false").attr("tabindex", "-1");
-          if (config.hideArrows) {
-            data.index === anchors.length - 1 ? data.right.hide() : data.right.show();
-            data.index === 0 ? data.left.hide() : data.left.show();
-          }
-          var lastOffsetX = data.offsetX || 0;
-          var offsetX = data.offsetX = -anchors[data.index].x;
-          var resetConfig = {
-            x: offsetX,
-            opacity: 1,
-            visibility: ""
-          };
-          var targets = $(anchors[data.index].els);
-          var prevTargs = $(anchors[data.previous] && anchors[data.previous].els);
-          var others = data.slides.not(targets);
-          var animation = config.animation;
-          var easing = config.easing;
-          var duration = Math.round(config.duration);
-          var vector = options.vector || (data.index > data.previous ? 1 : -1);
-          var fadeRule = "opacity " + duration + "ms " + easing;
-          var slideRule = "transform " + duration + "ms " + easing;
-          targets.find(FOCUSABLE_SELECTOR).removeAttr("tabindex");
-          targets.removeAttr("aria-hidden");
-          targets.find("*").removeAttr("aria-hidden");
-          others.find(FOCUSABLE_SELECTOR).attr("tabindex", "-1");
-          others.attr("aria-hidden", "true");
-          others.find("*").attr("aria-hidden", "true");
-          if (!designer) {
-            targets.each(ix.intro);
-            others.each(ix.outro);
-          }
-          if (options.immediate && !inRedraw) {
-            tram(targets).set(resetConfig);
-            resetOthers();
-            return;
-          }
-          if (data.index === data.previous) {
-            return;
-          }
-          if (!designer) {
-            data.ariaLiveLabel.text(`Slide ${index + 1} of ${anchors.length}.`);
-          }
-          if (animation === "cross") {
-            var reduced = Math.round(duration - duration * config.crossOver);
-            var wait = Math.round(duration - reduced);
-            fadeRule = "opacity " + reduced + "ms " + easing;
-            tram(prevTargs).set({
-              visibility: ""
-            }).add(fadeRule).start({
-              opacity: 0
-            });
-            tram(targets).set({
-              visibility: "",
-              x: offsetX,
-              opacity: 0,
-              zIndex: data.depth++
-            }).add(fadeRule).wait(wait).then({
-              opacity: 1
-            }).then(resetOthers);
-            return;
-          }
-          if (animation === "fade") {
-            tram(prevTargs).set({
-              visibility: ""
-            }).stop();
-            tram(targets).set({
-              visibility: "",
-              x: offsetX,
-              opacity: 0,
-              zIndex: data.depth++
-            }).add(fadeRule).start({
-              opacity: 1
-            }).then(resetOthers);
-            return;
-          }
-          if (animation === "over") {
-            resetConfig = {
-              x: data.endX
-            };
-            tram(prevTargs).set({
-              visibility: ""
-            }).stop();
-            tram(targets).set({
-              visibility: "",
-              zIndex: data.depth++,
-              x: offsetX + anchors[data.index].width * vector
-            }).add(slideRule).start({
-              x: offsetX
-            }).then(resetOthers);
-            return;
-          }
-          if (config.infinite && shift.x) {
-            tram(data.slides.not(prevTargs)).set({
-              visibility: "",
-              x: shift.x
-            }).add(slideRule).start({
-              x: offsetX
-            });
-            tram(prevTargs).set({
-              visibility: "",
-              x: shift.from
-            }).add(slideRule).start({
-              x: shift.to
-            });
-            data.shifted = prevTargs;
-          } else {
-            if (config.infinite && data.shifted) {
-              tram(data.shifted).set({
-                visibility: "",
-                x: lastOffsetX
-              });
-              data.shifted = null;
-            }
-            tram(data.slides).set({
-              visibility: ""
-            }).add(slideRule).start({
-              x: offsetX
-            });
-          }
-          function resetOthers() {
-            targets = $(anchors[data.index].els);
-            others = data.slides.not(targets);
-            if (animation !== "slide") {
-              resetConfig.visibility = "hidden";
-            }
-            tram(others).set(resetConfig);
-          }
-        }
-        function render(i, el) {
-          var data = $.data(el, namespace);
-          if (!data) {
-            return;
-          }
-          if (maskChanged(data)) {
-            return layout(data);
-          }
-          if (designer && slidesChanged(data)) {
-            layout(data);
-          }
-        }
-        function layout(data) {
-          var pages = 1;
-          var offset = 0;
-          var anchor = 0;
-          var width = 0;
-          var maskWidth = data.maskWidth;
-          var threshold = maskWidth - data.config.edge;
-          if (threshold < 0) {
-            threshold = 0;
-          }
-          data.anchors = [{
-            els: [],
-            x: 0,
-            width: 0
-          }];
-          data.slides.each(function(i, el) {
-            if (anchor - offset > threshold) {
-              pages++;
-              offset += maskWidth;
-              data.anchors[pages - 1] = {
-                els: [],
-                x: anchor,
-                width: 0
-              };
-            }
-            width = $(el).outerWidth(true);
-            anchor += width;
-            data.anchors[pages - 1].width += width;
-            data.anchors[pages - 1].els.push(el);
-            var ariaLabel = i + 1 + " of " + data.slides.length;
-            $(el).attr("aria-label", ariaLabel);
-            $(el).attr("role", "group");
-          });
-          data.endX = anchor;
-          if (designer) {
-            data.pages = null;
-          }
-          if (data.nav.length && data.pages !== pages) {
-            data.pages = pages;
-            buildNav(data);
-          }
-          var index = data.index;
-          if (index >= pages) {
-            index = pages - 1;
-          }
-          change(data, {
-            immediate: true,
-            index
-          });
-        }
-        function buildNav(data) {
-          var dots = [];
-          var $dot;
-          var spacing = data.el.attr("data-nav-spacing");
-          if (spacing) {
-            spacing = parseFloat(spacing) + "px";
-          }
-          for (var i = 0, len = data.pages; i < len; i++) {
-            $dot = $(dot);
-            $dot.attr("aria-label", "Show slide " + (i + 1) + " of " + len).attr("aria-pressed", "false").attr("role", "button").attr("tabindex", "-1");
-            if (data.nav.hasClass("w-num")) {
-              $dot.text(i + 1);
-            }
-            if (spacing != null) {
-              $dot.css({
-                "margin-left": spacing,
-                "margin-right": spacing
-              });
-            }
-            dots.push($dot);
-          }
-          data.nav.empty().append(dots);
-        }
-        function maskChanged(data) {
-          var maskWidth = data.mask.width();
-          if (data.maskWidth !== maskWidth) {
-            data.maskWidth = maskWidth;
-            return true;
-          }
-          return false;
-        }
-        function slidesChanged(data) {
-          var slidesWidth = 0;
-          data.slides.each(function(i, el) {
-            slidesWidth += $(el).outerWidth(true);
-          });
-          if (data.slidesWidth !== slidesWidth) {
-            data.slidesWidth = slidesWidth;
-            return true;
-          }
-          return false;
-        }
-        return api;
-      });
     }
   });
 
@@ -4979,17 +2820,17 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_freeGlobal.js
+  // node_modules/lodash/_freeGlobal.js
   var require_freeGlobal = __commonJS({
-    "node_modules/redux/node_modules/lodash/_freeGlobal.js"(exports, module) {
+    "node_modules/lodash/_freeGlobal.js"(exports, module) {
       var freeGlobal = typeof global == "object" && global && global.Object === Object && global;
       module.exports = freeGlobal;
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_root.js
+  // node_modules/lodash/_root.js
   var require_root = __commonJS({
-    "node_modules/redux/node_modules/lodash/_root.js"(exports, module) {
+    "node_modules/lodash/_root.js"(exports, module) {
       var freeGlobal = require_freeGlobal();
       var freeSelf = typeof self == "object" && self && self.Object === Object && self;
       var root = freeGlobal || freeSelf || Function("return this")();
@@ -4997,18 +2838,18 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_Symbol.js
+  // node_modules/lodash/_Symbol.js
   var require_Symbol = __commonJS({
-    "node_modules/redux/node_modules/lodash/_Symbol.js"(exports, module) {
+    "node_modules/lodash/_Symbol.js"(exports, module) {
       var root = require_root();
       var Symbol2 = root.Symbol;
       module.exports = Symbol2;
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_getRawTag.js
+  // node_modules/lodash/_getRawTag.js
   var require_getRawTag = __commonJS({
-    "node_modules/redux/node_modules/lodash/_getRawTag.js"(exports, module) {
+    "node_modules/lodash/_getRawTag.js"(exports, module) {
       var Symbol2 = require_Symbol();
       var objectProto = Object.prototype;
       var hasOwnProperty = objectProto.hasOwnProperty;
@@ -5035,9 +2876,9 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_objectToString.js
+  // node_modules/lodash/_objectToString.js
   var require_objectToString = __commonJS({
-    "node_modules/redux/node_modules/lodash/_objectToString.js"(exports, module) {
+    "node_modules/lodash/_objectToString.js"(exports, module) {
       var objectProto = Object.prototype;
       var nativeObjectToString = objectProto.toString;
       function objectToString(value) {
@@ -5047,9 +2888,9 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_baseGetTag.js
+  // node_modules/lodash/_baseGetTag.js
   var require_baseGetTag = __commonJS({
-    "node_modules/redux/node_modules/lodash/_baseGetTag.js"(exports, module) {
+    "node_modules/lodash/_baseGetTag.js"(exports, module) {
       var Symbol2 = require_Symbol();
       var getRawTag = require_getRawTag();
       var objectToString = require_objectToString();
@@ -5066,9 +2907,9 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_overArg.js
+  // node_modules/lodash/_overArg.js
   var require_overArg = __commonJS({
-    "node_modules/redux/node_modules/lodash/_overArg.js"(exports, module) {
+    "node_modules/lodash/_overArg.js"(exports, module) {
       function overArg(func, transform) {
         return function(arg) {
           return func(transform(arg));
@@ -5078,18 +2919,18 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/_getPrototype.js
+  // node_modules/lodash/_getPrototype.js
   var require_getPrototype = __commonJS({
-    "node_modules/redux/node_modules/lodash/_getPrototype.js"(exports, module) {
+    "node_modules/lodash/_getPrototype.js"(exports, module) {
       var overArg = require_overArg();
       var getPrototype = overArg(Object.getPrototypeOf, Object);
       module.exports = getPrototype;
     }
   });
 
-  // node_modules/redux/node_modules/lodash/isObjectLike.js
+  // node_modules/lodash/isObjectLike.js
   var require_isObjectLike = __commonJS({
-    "node_modules/redux/node_modules/lodash/isObjectLike.js"(exports, module) {
+    "node_modules/lodash/isObjectLike.js"(exports, module) {
       function isObjectLike(value) {
         return value != null && typeof value == "object";
       }
@@ -5097,9 +2938,9 @@
     }
   });
 
-  // node_modules/redux/node_modules/lodash/isPlainObject.js
+  // node_modules/lodash/isPlainObject.js
   var require_isPlainObject = __commonJS({
-    "node_modules/redux/node_modules/lodash/isPlainObject.js"(exports, module) {
+    "node_modules/lodash/isPlainObject.js"(exports, module) {
       var baseGetTag = require_baseGetTag();
       var getPrototype = require_getPrototype();
       var isObjectLike = require_isObjectLike();
@@ -6657,93 +4498,6 @@
     }
   });
 
-  // node_modules/lodash/_freeGlobal.js
-  var require_freeGlobal2 = __commonJS({
-    "node_modules/lodash/_freeGlobal.js"(exports, module) {
-      var freeGlobal = typeof global == "object" && global && global.Object === Object && global;
-      module.exports = freeGlobal;
-    }
-  });
-
-  // node_modules/lodash/_root.js
-  var require_root2 = __commonJS({
-    "node_modules/lodash/_root.js"(exports, module) {
-      var freeGlobal = require_freeGlobal2();
-      var freeSelf = typeof self == "object" && self && self.Object === Object && self;
-      var root = freeGlobal || freeSelf || Function("return this")();
-      module.exports = root;
-    }
-  });
-
-  // node_modules/lodash/_Symbol.js
-  var require_Symbol2 = __commonJS({
-    "node_modules/lodash/_Symbol.js"(exports, module) {
-      var root = require_root2();
-      var Symbol2 = root.Symbol;
-      module.exports = Symbol2;
-    }
-  });
-
-  // node_modules/lodash/_getRawTag.js
-  var require_getRawTag2 = __commonJS({
-    "node_modules/lodash/_getRawTag.js"(exports, module) {
-      var Symbol2 = require_Symbol2();
-      var objectProto = Object.prototype;
-      var hasOwnProperty = objectProto.hasOwnProperty;
-      var nativeObjectToString = objectProto.toString;
-      var symToStringTag = Symbol2 ? Symbol2.toStringTag : void 0;
-      function getRawTag(value) {
-        var isOwn = hasOwnProperty.call(value, symToStringTag), tag = value[symToStringTag];
-        try {
-          value[symToStringTag] = void 0;
-          var unmasked = true;
-        } catch (e) {
-        }
-        var result = nativeObjectToString.call(value);
-        if (unmasked) {
-          if (isOwn) {
-            value[symToStringTag] = tag;
-          } else {
-            delete value[symToStringTag];
-          }
-        }
-        return result;
-      }
-      module.exports = getRawTag;
-    }
-  });
-
-  // node_modules/lodash/_objectToString.js
-  var require_objectToString2 = __commonJS({
-    "node_modules/lodash/_objectToString.js"(exports, module) {
-      var objectProto = Object.prototype;
-      var nativeObjectToString = objectProto.toString;
-      function objectToString(value) {
-        return nativeObjectToString.call(value);
-      }
-      module.exports = objectToString;
-    }
-  });
-
-  // node_modules/lodash/_baseGetTag.js
-  var require_baseGetTag2 = __commonJS({
-    "node_modules/lodash/_baseGetTag.js"(exports, module) {
-      var Symbol2 = require_Symbol2();
-      var getRawTag = require_getRawTag2();
-      var objectToString = require_objectToString2();
-      var nullTag = "[object Null]";
-      var undefinedTag = "[object Undefined]";
-      var symToStringTag = Symbol2 ? Symbol2.toStringTag : void 0;
-      function baseGetTag(value) {
-        if (value == null) {
-          return value === void 0 ? undefinedTag : nullTag;
-        }
-        return symToStringTag && symToStringTag in Object(value) ? getRawTag(value) : objectToString(value);
-      }
-      module.exports = baseGetTag;
-    }
-  });
-
   // node_modules/lodash/isObject.js
   var require_isObject = __commonJS({
     "node_modules/lodash/isObject.js"(exports, module) {
@@ -6758,7 +4512,7 @@
   // node_modules/lodash/isFunction.js
   var require_isFunction = __commonJS({
     "node_modules/lodash/isFunction.js"(exports, module) {
-      var baseGetTag = require_baseGetTag2();
+      var baseGetTag = require_baseGetTag();
       var isObject = require_isObject();
       var asyncTag = "[object AsyncFunction]";
       var funcTag = "[object Function]";
@@ -6778,7 +4532,7 @@
   // node_modules/lodash/_coreJsData.js
   var require_coreJsData = __commonJS({
     "node_modules/lodash/_coreJsData.js"(exports, module) {
-      var root = require_root2();
+      var root = require_root();
       var coreJsData = root["__core-js_shared__"];
       module.exports = coreJsData;
     }
@@ -6875,7 +4629,7 @@
   var require_Map = __commonJS({
     "node_modules/lodash/_Map.js"(exports, module) {
       var getNative = require_getNative();
-      var root = require_root2();
+      var root = require_root();
       var Map = getNative(root, "Map");
       module.exports = Map;
     }
@@ -7275,7 +5029,7 @@
   // node_modules/lodash/_Uint8Array.js
   var require_Uint8Array = __commonJS({
     "node_modules/lodash/_Uint8Array.js"(exports, module) {
-      var root = require_root2();
+      var root = require_root();
       var Uint8Array2 = root.Uint8Array;
       module.exports = Uint8Array2;
     }
@@ -7312,7 +5066,7 @@
   // node_modules/lodash/_equalByTag.js
   var require_equalByTag = __commonJS({
     "node_modules/lodash/_equalByTag.js"(exports, module) {
-      var Symbol2 = require_Symbol2();
+      var Symbol2 = require_Symbol();
       var Uint8Array2 = require_Uint8Array();
       var eq = require_eq();
       var equalArrays = require_equalArrays();
@@ -7480,21 +5234,11 @@
     }
   });
 
-  // node_modules/lodash/isObjectLike.js
-  var require_isObjectLike2 = __commonJS({
-    "node_modules/lodash/isObjectLike.js"(exports, module) {
-      function isObjectLike(value) {
-        return value != null && typeof value == "object";
-      }
-      module.exports = isObjectLike;
-    }
-  });
-
   // node_modules/lodash/_baseIsArguments.js
   var require_baseIsArguments = __commonJS({
     "node_modules/lodash/_baseIsArguments.js"(exports, module) {
-      var baseGetTag = require_baseGetTag2();
-      var isObjectLike = require_isObjectLike2();
+      var baseGetTag = require_baseGetTag();
+      var isObjectLike = require_isObjectLike();
       var argsTag = "[object Arguments]";
       function baseIsArguments(value) {
         return isObjectLike(value) && baseGetTag(value) == argsTag;
@@ -7507,7 +5251,7 @@
   var require_isArguments = __commonJS({
     "node_modules/lodash/isArguments.js"(exports, module) {
       var baseIsArguments = require_baseIsArguments();
-      var isObjectLike = require_isObjectLike2();
+      var isObjectLike = require_isObjectLike();
       var objectProto = Object.prototype;
       var hasOwnProperty = objectProto.hasOwnProperty;
       var propertyIsEnumerable = objectProto.propertyIsEnumerable;
@@ -7533,7 +5277,7 @@
   // node_modules/lodash/isBuffer.js
   var require_isBuffer = __commonJS({
     "node_modules/lodash/isBuffer.js"(exports, module) {
-      var root = require_root2();
+      var root = require_root();
       var stubFalse = require_stubFalse();
       var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
       var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
@@ -7573,9 +5317,9 @@
   // node_modules/lodash/_baseIsTypedArray.js
   var require_baseIsTypedArray = __commonJS({
     "node_modules/lodash/_baseIsTypedArray.js"(exports, module) {
-      var baseGetTag = require_baseGetTag2();
+      var baseGetTag = require_baseGetTag();
       var isLength = require_isLength();
-      var isObjectLike = require_isObjectLike2();
+      var isObjectLike = require_isObjectLike();
       var argsTag = "[object Arguments]";
       var arrayTag = "[object Array]";
       var boolTag = "[object Boolean]";
@@ -7625,7 +5369,7 @@
   // node_modules/lodash/_nodeUtil.js
   var require_nodeUtil = __commonJS({
     "node_modules/lodash/_nodeUtil.js"(exports, module) {
-      var freeGlobal = require_freeGlobal2();
+      var freeGlobal = require_freeGlobal();
       var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
       var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
       var moduleExports = freeModule && freeModule.exports === freeExports;
@@ -7696,22 +5440,10 @@
     }
   });
 
-  // node_modules/lodash/_overArg.js
-  var require_overArg2 = __commonJS({
-    "node_modules/lodash/_overArg.js"(exports, module) {
-      function overArg(func, transform) {
-        return function(arg) {
-          return func(transform(arg));
-        };
-      }
-      module.exports = overArg;
-    }
-  });
-
   // node_modules/lodash/_nativeKeys.js
   var require_nativeKeys = __commonJS({
     "node_modules/lodash/_nativeKeys.js"(exports, module) {
-      var overArg = require_overArg2();
+      var overArg = require_overArg();
       var nativeKeys = overArg(Object.keys, Object);
       module.exports = nativeKeys;
     }
@@ -7836,7 +5568,7 @@
   var require_DataView = __commonJS({
     "node_modules/lodash/_DataView.js"(exports, module) {
       var getNative = require_getNative();
-      var root = require_root2();
+      var root = require_root();
       var DataView = getNative(root, "DataView");
       module.exports = DataView;
     }
@@ -7846,7 +5578,7 @@
   var require_Promise = __commonJS({
     "node_modules/lodash/_Promise.js"(exports, module) {
       var getNative = require_getNative();
-      var root = require_root2();
+      var root = require_root();
       var Promise2 = getNative(root, "Promise");
       module.exports = Promise2;
     }
@@ -7856,7 +5588,7 @@
   var require_Set = __commonJS({
     "node_modules/lodash/_Set.js"(exports, module) {
       var getNative = require_getNative();
-      var root = require_root2();
+      var root = require_root();
       var Set = getNative(root, "Set");
       module.exports = Set;
     }
@@ -7866,7 +5598,7 @@
   var require_WeakMap = __commonJS({
     "node_modules/lodash/_WeakMap.js"(exports, module) {
       var getNative = require_getNative();
-      var root = require_root2();
+      var root = require_root();
       var WeakMap2 = getNative(root, "WeakMap");
       module.exports = WeakMap2;
     }
@@ -7880,7 +5612,7 @@
       var Promise2 = require_Promise();
       var Set = require_Set();
       var WeakMap2 = require_WeakMap();
-      var baseGetTag = require_baseGetTag2();
+      var baseGetTag = require_baseGetTag();
       var toSource = require_toSource();
       var mapTag = "[object Map]";
       var objectTag = "[object Object]";
@@ -7973,7 +5705,7 @@
   var require_baseIsEqual = __commonJS({
     "node_modules/lodash/_baseIsEqual.js"(exports, module) {
       var baseIsEqualDeep = require_baseIsEqualDeep();
-      var isObjectLike = require_isObjectLike2();
+      var isObjectLike = require_isObjectLike();
       function baseIsEqual(value, other, bitmask, customizer, stack) {
         if (value === other) {
           return true;
@@ -8094,8 +5826,8 @@
   // node_modules/lodash/isSymbol.js
   var require_isSymbol = __commonJS({
     "node_modules/lodash/isSymbol.js"(exports, module) {
-      var baseGetTag = require_baseGetTag2();
-      var isObjectLike = require_isObjectLike2();
+      var baseGetTag = require_baseGetTag();
+      var isObjectLike = require_isObjectLike();
       var symbolTag = "[object Symbol]";
       function isSymbol(value) {
         return typeof value == "symbol" || isObjectLike(value) && baseGetTag(value) == symbolTag;
@@ -8207,7 +5939,7 @@
   // node_modules/lodash/_baseToString.js
   var require_baseToString = __commonJS({
     "node_modules/lodash/_baseToString.js"(exports, module) {
-      var Symbol2 = require_Symbol2();
+      var Symbol2 = require_Symbol();
       var arrayMap = require_arrayMap();
       var isArray = require_isArray();
       var isSymbol = require_isSymbol();
@@ -11077,9 +8809,9 @@
   // node_modules/lodash/isString.js
   var require_isString = __commonJS({
     "node_modules/lodash/isString.js"(exports, module) {
-      var baseGetTag = require_baseGetTag2();
+      var baseGetTag = require_baseGetTag();
       var isArray = require_isArray();
-      var isObjectLike = require_isObjectLike2();
+      var isObjectLike = require_isObjectLike();
       var stringTag = "[object String]";
       function isString(value) {
         return typeof value == "string" || !isArray(value) && isObjectLike(value) && baseGetTag(value) == stringTag;
@@ -11324,20 +9056,11 @@
     }
   });
 
-  // node_modules/lodash/_getPrototype.js
-  var require_getPrototype2 = __commonJS({
-    "node_modules/lodash/_getPrototype.js"(exports, module) {
-      var overArg = require_overArg2();
-      var getPrototype = overArg(Object.getPrototypeOf, Object);
-      module.exports = getPrototype;
-    }
-  });
-
   // node_modules/lodash/_getSymbolsIn.js
   var require_getSymbolsIn = __commonJS({
     "node_modules/lodash/_getSymbolsIn.js"(exports, module) {
       var arrayPush = require_arrayPush();
-      var getPrototype = require_getPrototype2();
+      var getPrototype = require_getPrototype();
       var getSymbols = require_getSymbols();
       var stubArray = require_stubArray();
       var nativeGetSymbols = Object.getOwnPropertySymbols;
@@ -11558,7 +9281,7 @@
   // node_modules/lodash/now.js
   var require_now = __commonJS({
     "node_modules/lodash/now.js"(exports, module) {
-      var root = require_root2();
+      var root = require_root();
       var now = function() {
         return root.Date.now();
       };
@@ -12097,7 +9820,7 @@
   // node_modules/lodash/_isFlattenable.js
   var require_isFlattenable = __commonJS({
     "node_modules/lodash/_isFlattenable.js"(exports, module) {
-      var Symbol2 = require_Symbol2();
+      var Symbol2 = require_Symbol();
       var isArguments = require_isArguments();
       var isArray = require_isArray();
       var spreadableSymbol = Symbol2 ? Symbol2.isConcatSpreadable : void 0;
@@ -12391,7 +10114,7 @@
       var LodashWrapper = require_LodashWrapper();
       var baseLodash = require_baseLodash();
       var isArray = require_isArray();
-      var isObjectLike = require_isObjectLike2();
+      var isObjectLike = require_isObjectLike();
       var wrapperClone = require_wrapperClone();
       var objectProto = Object.prototype;
       var hasOwnProperty = objectProto.hasOwnProperty;
@@ -12808,49 +10531,52 @@
         }
         return newState;
       };
-      var whenScrollDirectionChange = (handler) => (options, oldState = {}) => {
-        const {
-          stiffScrollTop: scrollTop,
-          scrollHeight,
-          innerHeight
-        } = getDocumentState();
-        const {
-          event: {
-            config,
-            eventTypeId
+      var whenScrollDirectionChange = (handler) => (
+        // $FlowFixMe
+        (options, oldState = {}) => {
+          const {
+            stiffScrollTop: scrollTop,
+            scrollHeight,
+            innerHeight
+          } = getDocumentState();
+          const {
+            event: {
+              config,
+              eventTypeId
+            }
+          } = options;
+          const {
+            scrollOffsetValue,
+            scrollOffsetUnit
+          } = config;
+          const isPX = scrollOffsetUnit === "PX";
+          const scrollHeightBounds = scrollHeight - innerHeight;
+          const percentTop = Number((scrollTop / scrollHeightBounds).toFixed(2));
+          if (oldState && oldState.percentTop === percentTop) {
+            return oldState;
           }
-        } = options;
-        const {
-          scrollOffsetValue,
-          scrollOffsetUnit
-        } = config;
-        const isPX = scrollOffsetUnit === "PX";
-        const scrollHeightBounds = scrollHeight - innerHeight;
-        const percentTop = Number((scrollTop / scrollHeightBounds).toFixed(2));
-        if (oldState && oldState.percentTop === percentTop) {
-          return oldState;
+          const scrollTopPadding = (isPX ? scrollOffsetValue : innerHeight * (scrollOffsetValue || 0) / 100) / scrollHeightBounds;
+          let scrollingDown;
+          let scrollDirectionChanged;
+          let anchorTop = 0;
+          if (oldState) {
+            scrollingDown = percentTop > oldState.percentTop;
+            scrollDirectionChanged = oldState.scrollingDown !== scrollingDown;
+            anchorTop = scrollDirectionChanged ? percentTop : oldState.anchorTop;
+          }
+          const inBounds = eventTypeId === PAGE_SCROLL_DOWN ? percentTop >= anchorTop + scrollTopPadding : percentTop <= anchorTop - scrollTopPadding;
+          const newState = (0, _extends2.default)({}, oldState, {
+            percentTop,
+            inBounds,
+            anchorTop,
+            scrollingDown
+          });
+          if (oldState && inBounds && (scrollDirectionChanged || newState.inBounds !== oldState.inBounds)) {
+            return handler(options, newState) || newState;
+          }
+          return newState;
         }
-        const scrollTopPadding = (isPX ? scrollOffsetValue : innerHeight * (scrollOffsetValue || 0) / 100) / scrollHeightBounds;
-        let scrollingDown;
-        let scrollDirectionChanged;
-        let anchorTop = 0;
-        if (oldState) {
-          scrollingDown = percentTop > oldState.percentTop;
-          scrollDirectionChanged = oldState.scrollingDown !== scrollingDown;
-          anchorTop = scrollDirectionChanged ? percentTop : oldState.anchorTop;
-        }
-        const inBounds = eventTypeId === PAGE_SCROLL_DOWN ? percentTop >= anchorTop + scrollTopPadding : percentTop <= anchorTop - scrollTopPadding;
-        const newState = (0, _extends2.default)({}, oldState, {
-          percentTop,
-          inBounds,
-          anchorTop,
-          scrollingDown
-        });
-        if (oldState && inBounds && (scrollDirectionChanged || newState.inBounds !== oldState.inBounds)) {
-          return handler(options, newState) || newState;
-        }
-        return newState;
-      };
+      );
       var pointIntersects = (point, rect) => point.left > rect.left && point.left < rect.right && point.top > rect.top && point.top < rect.bottom;
       var whenPageLoadFinish = (handler) => (options, oldState) => {
         const newState = {
@@ -14318,6 +12044,745 @@
     }
   });
 
+  // shared/render/plugins/BaseSiteModules/webflow-links.js
+  var require_webflow_links = __commonJS({
+    "shared/render/plugins/BaseSiteModules/webflow-links.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      Webflow.define("links", module.exports = function($, _) {
+        var api = {};
+        var $win = $(window);
+        var designer;
+        var inApp = Webflow.env();
+        var location = window.location;
+        var tempLink = document.createElement("a");
+        var linkCurrent = "w--current";
+        var indexPage = /index\.(html|php)$/;
+        var dirList = /\/$/;
+        var anchors;
+        var slug;
+        api.ready = api.design = api.preview = init;
+        function init() {
+          designer = inApp && Webflow.env("design");
+          slug = Webflow.env("slug") || location.pathname || "";
+          Webflow.scroll.off(scroll);
+          anchors = [];
+          var links = document.links;
+          for (var i = 0; i < links.length; ++i) {
+            select(links[i]);
+          }
+          if (anchors.length) {
+            Webflow.scroll.on(scroll);
+            scroll();
+          }
+        }
+        function select(link) {
+          var href = designer && link.getAttribute("href-disabled") || link.getAttribute("href");
+          tempLink.href = href;
+          if (href.indexOf(":") >= 0) {
+            return;
+          }
+          var $link = $(link);
+          if (tempLink.hash.length > 1 && tempLink.host + tempLink.pathname === location.host + location.pathname) {
+            if (!/^#[a-zA-Z0-9\-\_]+$/.test(tempLink.hash)) {
+              return;
+            }
+            var $section = $(tempLink.hash);
+            $section.length && anchors.push({
+              link: $link,
+              sec: $section,
+              active: false
+            });
+            return;
+          }
+          if (href === "#" || href === "") {
+            return;
+          }
+          var match = tempLink.href === location.href || href === slug || indexPage.test(href) && dirList.test(slug);
+          setClass($link, linkCurrent, match);
+        }
+        function scroll() {
+          var viewTop = $win.scrollTop();
+          var viewHeight = $win.height();
+          _.each(anchors, function(anchor) {
+            var $link = anchor.link;
+            var $section = anchor.sec;
+            var top = $section.offset().top;
+            var height = $section.outerHeight();
+            var offset = viewHeight * 0.5;
+            var active = $section.is(":visible") && top + height - offset >= viewTop && top + offset <= viewTop + viewHeight;
+            if (anchor.active === active) {
+              return;
+            }
+            anchor.active = active;
+            setClass($link, linkCurrent, active);
+          });
+        }
+        function setClass($elem, className, add) {
+          var exists = $elem.hasClass(className);
+          if (add && exists) {
+            return;
+          }
+          if (!add && !exists) {
+            return;
+          }
+          add ? $elem.addClass(className) : $elem.removeClass(className);
+        }
+        return api;
+      });
+    }
+  });
+
+  // shared/render/plugins/BaseSiteModules/webflow-scroll.js
+  var require_webflow_scroll = __commonJS({
+    "shared/render/plugins/BaseSiteModules/webflow-scroll.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      Webflow.define("scroll", module.exports = function($) {
+        var NS_EVENTS = {
+          WF_CLICK_EMPTY: "click.wf-empty-link",
+          WF_CLICK_SCROLL: "click.wf-scroll"
+        };
+        var loc = window.location;
+        var history = inIframe() ? null : window.history;
+        var $win = $(window);
+        var $doc = $(document);
+        var $body = $(document.body);
+        var animate = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || function(fn) {
+          window.setTimeout(fn, 15);
+        };
+        var rootTag = Webflow.env("editor") ? ".w-editor-body" : "body";
+        var headerSelector = "header, " + rootTag + " > .header, " + rootTag + " > .w-nav:not([data-no-scroll])";
+        var emptyHrefSelector = 'a[href="#"]';
+        var localHrefSelector = 'a[href*="#"]:not(.w-tab-link):not(' + emptyHrefSelector + ")";
+        var scrollTargetOutlineCSS = '.wf-force-outline-none[tabindex="-1"]:focus{outline:none;}';
+        var focusStylesEl = document.createElement("style");
+        focusStylesEl.appendChild(document.createTextNode(scrollTargetOutlineCSS));
+        function inIframe() {
+          try {
+            return Boolean(window.frameElement);
+          } catch (e) {
+            return true;
+          }
+        }
+        var validHash = /^#[a-zA-Z0-9][\w:.-]*$/;
+        function linksToCurrentPage(link) {
+          return validHash.test(link.hash) && link.host + link.pathname === loc.host + loc.pathname;
+        }
+        const reducedMotionMediaQuery = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)");
+        function reducedMotionEnabled() {
+          return document.body.getAttribute("data-wf-scroll-motion") === "none" || reducedMotionMediaQuery.matches;
+        }
+        function setFocusable($el, action) {
+          var initialTabindex;
+          switch (action) {
+            case "add":
+              initialTabindex = $el.attr("tabindex");
+              if (initialTabindex) {
+                $el.attr("data-wf-tabindex-swap", initialTabindex);
+              } else {
+                $el.attr("tabindex", "-1");
+              }
+              break;
+            case "remove":
+              initialTabindex = $el.attr("data-wf-tabindex-swap");
+              if (initialTabindex) {
+                $el.attr("tabindex", initialTabindex);
+                $el.removeAttr("data-wf-tabindex-swap");
+              } else {
+                $el.removeAttr("tabindex");
+              }
+              break;
+          }
+          $el.toggleClass("wf-force-outline-none", action === "add");
+        }
+        function validateScroll(evt) {
+          var target = evt.currentTarget;
+          if (
+            // Bail if in Designer
+            Webflow.env("design") || // Ignore links being used by jQuery mobile
+            window.$.mobile && /(?:^|\s)ui-link(?:$|\s)/.test(target.className)
+          ) {
+            return;
+          }
+          var hash = linksToCurrentPage(target) ? target.hash : "";
+          if (hash === "")
+            return;
+          var $el = $(hash);
+          if (!$el.length) {
+            return;
+          }
+          if (evt) {
+            evt.preventDefault();
+            evt.stopPropagation();
+          }
+          updateHistory(hash, evt);
+          window.setTimeout(function() {
+            scroll($el, function setFocus() {
+              setFocusable($el, "add");
+              $el.get(0).focus({
+                preventScroll: true
+              });
+              setFocusable($el, "remove");
+            });
+          }, evt ? 0 : 300);
+        }
+        function updateHistory(hash) {
+          if (loc.hash !== hash && history && history.pushState && // Navigation breaks Chrome when the protocol is `file:`.
+          !(Webflow.env.chrome && loc.protocol === "file:")) {
+            var oldHash = history.state && history.state.hash;
+            if (oldHash !== hash) {
+              history.pushState({
+                hash
+              }, "", hash);
+            }
+          }
+        }
+        function scroll($targetEl, cb) {
+          var start = $win.scrollTop();
+          var end = calculateScrollEndPosition($targetEl);
+          if (start === end)
+            return;
+          var duration = calculateScrollDuration($targetEl, start, end);
+          var clock = Date.now();
+          var step = function() {
+            var elapsed = Date.now() - clock;
+            window.scroll(0, getY(start, end, elapsed, duration));
+            if (elapsed <= duration) {
+              animate(step);
+            } else if (typeof cb === "function") {
+              cb();
+            }
+          };
+          animate(step);
+        }
+        function calculateScrollEndPosition($targetEl) {
+          var $header = $(headerSelector);
+          var offsetY = $header.css("position") === "fixed" ? $header.outerHeight() : 0;
+          var end = $targetEl.offset().top - offsetY;
+          if ($targetEl.data("scroll") === "mid") {
+            var available = $win.height() - offsetY;
+            var elHeight = $targetEl.outerHeight();
+            if (elHeight < available) {
+              end -= Math.round((available - elHeight) / 2);
+            }
+          }
+          return end;
+        }
+        function calculateScrollDuration($targetEl, start, end) {
+          if (reducedMotionEnabled())
+            return 0;
+          var mult = 1;
+          $body.add($targetEl).each(function(_, el) {
+            var time = parseFloat(el.getAttribute("data-scroll-time"));
+            if (!isNaN(time) && time >= 0) {
+              mult = time;
+            }
+          });
+          return (472.143 * Math.log(Math.abs(start - end) + 125) - 2e3) * mult;
+        }
+        function getY(start, end, elapsed, duration) {
+          if (elapsed > duration) {
+            return end;
+          }
+          return start + (end - start) * ease(elapsed / duration);
+        }
+        function ease(t) {
+          return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+        }
+        function ready() {
+          var {
+            WF_CLICK_EMPTY,
+            WF_CLICK_SCROLL
+          } = NS_EVENTS;
+          $doc.on(WF_CLICK_SCROLL, localHrefSelector, validateScroll);
+          $doc.on(WF_CLICK_EMPTY, emptyHrefSelector, function(e) {
+            e.preventDefault();
+          });
+          document.head.insertBefore(focusStylesEl, document.head.firstChild);
+        }
+        return {
+          ready
+        };
+      });
+    }
+  });
+
+  // shared/render/plugins/BaseSiteModules/webflow-touch.js
+  var require_webflow_touch = __commonJS({
+    "shared/render/plugins/BaseSiteModules/webflow-touch.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      Webflow.define("touch", module.exports = function($) {
+        var api = {};
+        var getSelection = window.getSelection;
+        $.event.special.tap = {
+          bindType: "click",
+          delegateType: "click"
+        };
+        api.init = function(el) {
+          el = typeof el === "string" ? $(el).get(0) : el;
+          return el ? new Touch(el) : null;
+        };
+        function Touch(el) {
+          var active = false;
+          var useTouch = false;
+          var thresholdX = Math.min(Math.round(window.innerWidth * 0.04), 40);
+          var startX;
+          var lastX;
+          el.addEventListener("touchstart", start, false);
+          el.addEventListener("touchmove", move, false);
+          el.addEventListener("touchend", end, false);
+          el.addEventListener("touchcancel", cancel, false);
+          el.addEventListener("mousedown", start, false);
+          el.addEventListener("mousemove", move, false);
+          el.addEventListener("mouseup", end, false);
+          el.addEventListener("mouseout", cancel, false);
+          function start(evt) {
+            var touches = evt.touches;
+            if (touches && touches.length > 1) {
+              return;
+            }
+            active = true;
+            if (touches) {
+              useTouch = true;
+              startX = touches[0].clientX;
+            } else {
+              startX = evt.clientX;
+            }
+            lastX = startX;
+          }
+          function move(evt) {
+            if (!active) {
+              return;
+            }
+            if (useTouch && evt.type === "mousemove") {
+              evt.preventDefault();
+              evt.stopPropagation();
+              return;
+            }
+            var touches = evt.touches;
+            var x = touches ? touches[0].clientX : evt.clientX;
+            var velocityX = x - lastX;
+            lastX = x;
+            if (Math.abs(velocityX) > thresholdX && getSelection && String(getSelection()) === "") {
+              triggerEvent("swipe", evt, {
+                direction: velocityX > 0 ? "right" : "left"
+              });
+              cancel();
+            }
+          }
+          function end(evt) {
+            if (!active) {
+              return;
+            }
+            active = false;
+            if (useTouch && evt.type === "mouseup") {
+              evt.preventDefault();
+              evt.stopPropagation();
+              useTouch = false;
+              return;
+            }
+          }
+          function cancel() {
+            active = false;
+          }
+          function destroy() {
+            el.removeEventListener("touchstart", start, false);
+            el.removeEventListener("touchmove", move, false);
+            el.removeEventListener("touchend", end, false);
+            el.removeEventListener("touchcancel", cancel, false);
+            el.removeEventListener("mousedown", start, false);
+            el.removeEventListener("mousemove", move, false);
+            el.removeEventListener("mouseup", end, false);
+            el.removeEventListener("mouseout", cancel, false);
+            el = null;
+          }
+          this.destroy = destroy;
+        }
+        function triggerEvent(type, evt, data) {
+          var newEvent = $.Event(type, {
+            originalEvent: evt
+          });
+          $(evt.target).trigger(newEvent, data);
+        }
+        api.instance = api.init(document);
+        return api;
+      });
+    }
+  });
+
+  // shared/render/plugins/Dropdown/webflow-dropdown.js
+  var require_webflow_dropdown = __commonJS({
+    "shared/render/plugins/Dropdown/webflow-dropdown.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      var IXEvents = require_webflow_ix2_events();
+      var KEY_CODES = {
+        ARROW_LEFT: 37,
+        ARROW_UP: 38,
+        ARROW_RIGHT: 39,
+        ARROW_DOWN: 40,
+        ESCAPE: 27,
+        SPACE: 32,
+        ENTER: 13,
+        HOME: 36,
+        END: 35
+      };
+      var FORCE_CLOSE = true;
+      var INTERNAL_PAGE_LINK_HASHES_PATTERN = /^#[a-zA-Z0-9\-_]+$/;
+      Webflow.define("dropdown", module.exports = function($, _) {
+        var debounce = _.debounce;
+        var api = {};
+        var inApp = Webflow.env();
+        var inPreview = false;
+        var inDesigner;
+        var touch = Webflow.env.touch;
+        var namespace = ".w-dropdown";
+        var openStateClassName = "w--open";
+        var ix = IXEvents.triggers;
+        var defaultZIndex = 900;
+        var focusOutEvent = "focusout" + namespace;
+        var keydownEvent = "keydown" + namespace;
+        var mouseEnterEvent = "mouseenter" + namespace;
+        var mouseMoveEvent = "mousemove" + namespace;
+        var mouseLeaveEvent = "mouseleave" + namespace;
+        var mouseUpEvent = (touch ? "click" : "mouseup") + namespace;
+        var closeEvent = "w-close" + namespace;
+        var settingEvent = "setting" + namespace;
+        var $doc = $(document);
+        var $dropdowns;
+        api.ready = init;
+        api.design = function() {
+          if (inPreview) {
+            closeAll();
+          }
+          inPreview = false;
+          init();
+        };
+        api.preview = function() {
+          inPreview = true;
+          init();
+        };
+        function init() {
+          inDesigner = inApp && Webflow.env("design");
+          $dropdowns = $doc.find(namespace);
+          $dropdowns.each(build);
+        }
+        function build(i, el) {
+          var $el = $(el);
+          var data = $.data(el, namespace);
+          if (!data) {
+            data = $.data(el, namespace, {
+              open: false,
+              el: $el,
+              config: {},
+              selectedIdx: -1
+            });
+          }
+          data.toggle = data.el.children(".w-dropdown-toggle");
+          data.list = data.el.children(".w-dropdown-list");
+          data.links = data.list.find("a:not(.w-dropdown .w-dropdown a)");
+          data.complete = complete(data);
+          data.mouseLeave = makeMouseLeaveHandler(data);
+          data.mouseUpOutside = outside(data);
+          data.mouseMoveOutside = moveOutside(data);
+          configure(data);
+          var toggleId = data.toggle.attr("id");
+          var listId = data.list.attr("id");
+          if (!toggleId) {
+            toggleId = "w-dropdown-toggle-" + i;
+          }
+          if (!listId) {
+            listId = "w-dropdown-list-" + i;
+          }
+          data.toggle.attr("id", toggleId);
+          data.toggle.attr("aria-controls", listId);
+          data.toggle.attr("aria-haspopup", "menu");
+          data.toggle.attr("aria-expanded", "false");
+          data.toggle.find(".w-icon-dropdown-toggle").attr("aria-hidden", "true");
+          if (data.toggle.prop("tagName") !== "BUTTON") {
+            data.toggle.attr("role", "button");
+            if (!data.toggle.attr("tabindex")) {
+              data.toggle.attr("tabindex", "0");
+            }
+          }
+          data.list.attr("id", listId);
+          data.list.attr("aria-labelledby", toggleId);
+          data.links.each(function(idx, link) {
+            if (!link.hasAttribute("tabindex"))
+              link.setAttribute("tabindex", "0");
+            if (INTERNAL_PAGE_LINK_HASHES_PATTERN.test(link.hash)) {
+              link.addEventListener("click", close.bind(null, data));
+            }
+          });
+          data.el.off(namespace);
+          data.toggle.off(namespace);
+          if (data.nav) {
+            data.nav.off(namespace);
+          }
+          var initialToggler = makeToggler(data, FORCE_CLOSE);
+          if (inDesigner) {
+            data.el.on(settingEvent, makeSettingEventHandler(data));
+          }
+          if (!inDesigner) {
+            if (inApp) {
+              data.hovering = false;
+              close(data);
+            }
+            if (data.config.hover) {
+              data.toggle.on(mouseEnterEvent, makeMouseEnterHandler(data));
+            }
+            data.el.on(closeEvent, initialToggler);
+            data.el.on(keydownEvent, makeDropdownKeydownHandler(data));
+            data.el.on(focusOutEvent, makeDropdownFocusOutHandler(data));
+            data.toggle.on(mouseUpEvent, initialToggler);
+            data.toggle.on(keydownEvent, makeToggleKeydownHandler(data));
+            data.nav = data.el.closest(".w-nav");
+            data.nav.on(closeEvent, initialToggler);
+          }
+        }
+        function configure(data) {
+          var zIndex = Number(data.el.css("z-index"));
+          data.manageZ = zIndex === defaultZIndex || zIndex === defaultZIndex + 1;
+          data.config = {
+            hover: data.el.attr("data-hover") === "true" && !touch,
+            delay: data.el.attr("data-delay")
+          };
+        }
+        function makeSettingEventHandler(data) {
+          return function(evt, options) {
+            options = options || {};
+            configure(data);
+            options.open === true && open(data, true);
+            options.open === false && close(data, {
+              immediate: true
+            });
+          };
+        }
+        function makeToggler(data, forceClose) {
+          return debounce(function(evt) {
+            if (data.open || evt && evt.type === "w-close") {
+              return close(data, {
+                forceClose
+              });
+            }
+            open(data);
+          });
+        }
+        function open(data) {
+          if (data.open) {
+            return;
+          }
+          closeOthers(data);
+          data.open = true;
+          data.list.addClass(openStateClassName);
+          data.toggle.addClass(openStateClassName);
+          data.toggle.attr("aria-expanded", "true");
+          ix.intro(0, data.el[0]);
+          Webflow.redraw.up();
+          data.manageZ && data.el.css("z-index", defaultZIndex + 1);
+          var isEditor = Webflow.env("editor");
+          if (!inDesigner) {
+            $doc.on(mouseUpEvent, data.mouseUpOutside);
+          }
+          if (data.hovering && !isEditor) {
+            data.el.on(mouseLeaveEvent, data.mouseLeave);
+          }
+          if (data.hovering && isEditor) {
+            $doc.on(mouseMoveEvent, data.mouseMoveOutside);
+          }
+          window.clearTimeout(data.delayId);
+        }
+        function close(data, {
+          immediate,
+          forceClose
+        } = {}) {
+          if (!data.open) {
+            return;
+          }
+          if (data.config.hover && data.hovering && !forceClose) {
+            return;
+          }
+          data.toggle.attr("aria-expanded", "false");
+          data.open = false;
+          var config = data.config;
+          ix.outro(0, data.el[0]);
+          $doc.off(mouseUpEvent, data.mouseUpOutside);
+          $doc.off(mouseMoveEvent, data.mouseMoveOutside);
+          data.el.off(mouseLeaveEvent, data.mouseLeave);
+          window.clearTimeout(data.delayId);
+          if (!config.delay || immediate) {
+            return data.complete();
+          }
+          data.delayId = window.setTimeout(data.complete, config.delay);
+        }
+        function closeAll() {
+          $doc.find(namespace).each(function(i, el) {
+            $(el).triggerHandler(closeEvent);
+          });
+        }
+        function closeOthers(data) {
+          var self2 = data.el[0];
+          $dropdowns.each(function(i, other) {
+            var $other = $(other);
+            if ($other.is(self2) || $other.has(self2).length) {
+              return;
+            }
+            $other.triggerHandler(closeEvent);
+          });
+        }
+        function outside(data) {
+          if (data.mouseUpOutside) {
+            $doc.off(mouseUpEvent, data.mouseUpOutside);
+          }
+          return debounce(function(evt) {
+            if (!data.open) {
+              return;
+            }
+            var $target = $(evt.target);
+            if ($target.closest(".w-dropdown-toggle").length) {
+              return;
+            }
+            var isEventOutsideDropdowns = $.inArray(data.el[0], $target.parents(namespace)) === -1;
+            var isEditor = Webflow.env("editor");
+            if (isEventOutsideDropdowns) {
+              if (isEditor) {
+                var isEventOnDetachedSvg = $target.parents().length === 1 && $target.parents("svg").length === 1;
+                var isEventOnHoverControls = $target.parents(".w-editor-bem-EditorHoverControls").length;
+                if (isEventOnDetachedSvg || isEventOnHoverControls) {
+                  return;
+                }
+              }
+              close(data);
+            }
+          });
+        }
+        function complete(data) {
+          return function() {
+            data.list.removeClass(openStateClassName);
+            data.toggle.removeClass(openStateClassName);
+            data.manageZ && data.el.css("z-index", "");
+          };
+        }
+        function makeMouseEnterHandler(data) {
+          return function() {
+            data.hovering = true;
+            open(data);
+          };
+        }
+        function makeMouseLeaveHandler(data) {
+          return function() {
+            data.hovering = false;
+            if (!data.links.is(":focus")) {
+              close(data);
+            }
+          };
+        }
+        function moveOutside(data) {
+          return debounce(function(evt) {
+            if (!data.open) {
+              return;
+            }
+            var $target = $(evt.target);
+            var isEventOutsideDropdowns = $.inArray(data.el[0], $target.parents(namespace)) === -1;
+            if (isEventOutsideDropdowns) {
+              var isEventOnHoverControls = $target.parents(".w-editor-bem-EditorHoverControls").length;
+              var isEventOnHoverToolbar = $target.parents(".w-editor-bem-RTToolbar").length;
+              var $editorOverlay = $(".w-editor-bem-EditorOverlay");
+              var isDropdownInEdition = $editorOverlay.find(".w-editor-edit-outline").length || $editorOverlay.find(".w-editor-bem-RTToolbar").length;
+              if (isEventOnHoverControls || isEventOnHoverToolbar || isDropdownInEdition) {
+                return;
+              }
+              data.hovering = false;
+              close(data);
+            }
+          });
+        }
+        function makeDropdownKeydownHandler(data) {
+          return function(evt) {
+            if (inDesigner || !data.open) {
+              return;
+            }
+            data.selectedIdx = data.links.index(document.activeElement);
+            switch (evt.keyCode) {
+              case KEY_CODES.HOME: {
+                if (!data.open)
+                  return;
+                data.selectedIdx = 0;
+                focusSelectedLink(data);
+                return evt.preventDefault();
+              }
+              case KEY_CODES.END: {
+                if (!data.open)
+                  return;
+                data.selectedIdx = data.links.length - 1;
+                focusSelectedLink(data);
+                return evt.preventDefault();
+              }
+              case KEY_CODES.ESCAPE: {
+                close(data);
+                data.toggle.focus();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ARROW_RIGHT:
+              case KEY_CODES.ARROW_DOWN: {
+                data.selectedIdx = Math.min(data.links.length - 1, data.selectedIdx + 1);
+                focusSelectedLink(data);
+                return evt.preventDefault();
+              }
+              case KEY_CODES.ARROW_LEFT:
+              case KEY_CODES.ARROW_UP: {
+                data.selectedIdx = Math.max(-1, data.selectedIdx - 1);
+                focusSelectedLink(data);
+                return evt.preventDefault();
+              }
+            }
+          };
+        }
+        function focusSelectedLink(data) {
+          if (data.links[data.selectedIdx]) {
+            data.links[data.selectedIdx].focus();
+          }
+        }
+        function makeToggleKeydownHandler(data) {
+          var toggler = makeToggler(data, FORCE_CLOSE);
+          return function(evt) {
+            if (inDesigner)
+              return;
+            if (!data.open) {
+              switch (evt.keyCode) {
+                case KEY_CODES.ARROW_UP:
+                case KEY_CODES.ARROW_DOWN: {
+                  return evt.stopPropagation();
+                }
+              }
+            }
+            switch (evt.keyCode) {
+              case KEY_CODES.SPACE:
+              case KEY_CODES.ENTER: {
+                toggler();
+                evt.stopPropagation();
+                return evt.preventDefault();
+              }
+            }
+          };
+        }
+        function makeDropdownFocusOutHandler(data) {
+          return debounce(function(evt) {
+            var {
+              relatedTarget,
+              target
+            } = evt;
+            var menuEl = data.el[0];
+            var menuContainsFocus = menuEl.contains(relatedTarget) || menuEl.contains(target);
+            if (!menuContainsFocus) {
+              close(data);
+            }
+            return evt.stopPropagation();
+          });
+        }
+        return api;
+      });
+    }
+  });
+
   // shared/render/plugins/Form/webflow-forms.js
   var require_webflow_forms = __commonJS({
     "shared/render/plugins/Form/webflow-forms.js"(exports, module) {
@@ -14776,21 +13241,1376 @@
     }
   });
 
+  // shared/render/plugins/Navbar/webflow-navbar.js
+  var require_webflow_navbar = __commonJS({
+    "shared/render/plugins/Navbar/webflow-navbar.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      var IXEvents = require_webflow_ix2_events();
+      var KEY_CODES = {
+        ARROW_LEFT: 37,
+        ARROW_UP: 38,
+        ARROW_RIGHT: 39,
+        ARROW_DOWN: 40,
+        ESCAPE: 27,
+        SPACE: 32,
+        ENTER: 13,
+        HOME: 36,
+        END: 35
+      };
+      Webflow.define("navbar", module.exports = function($, _) {
+        var api = {};
+        var tram = $.tram;
+        var $win = $(window);
+        var $doc = $(document);
+        var debounce = _.debounce;
+        var $body;
+        var $navbars;
+        var designer;
+        var inEditor;
+        var inApp = Webflow.env();
+        var overlay = '<div class="w-nav-overlay" data-wf-ignore />';
+        var namespace = ".w-nav";
+        var navbarOpenedButton = "w--open";
+        var navbarOpenedDropdown = "w--nav-dropdown-open";
+        var navbarOpenedDropdownToggle = "w--nav-dropdown-toggle-open";
+        var navbarOpenedDropdownList = "w--nav-dropdown-list-open";
+        var navbarOpenedLink = "w--nav-link-open";
+        var ix = IXEvents.triggers;
+        var menuSibling = $();
+        api.ready = api.design = api.preview = init;
+        api.destroy = function() {
+          menuSibling = $();
+          removeListeners();
+          if ($navbars && $navbars.length) {
+            $navbars.each(teardown);
+          }
+        };
+        function init() {
+          designer = inApp && Webflow.env("design");
+          inEditor = Webflow.env("editor");
+          $body = $(document.body);
+          $navbars = $doc.find(namespace);
+          if (!$navbars.length) {
+            return;
+          }
+          $navbars.each(build);
+          removeListeners();
+          addListeners();
+        }
+        function removeListeners() {
+          Webflow.resize.off(resizeAll);
+        }
+        function addListeners() {
+          Webflow.resize.on(resizeAll);
+        }
+        function resizeAll() {
+          $navbars.each(resize);
+        }
+        function build(i, el) {
+          var $el = $(el);
+          var data = $.data(el, namespace);
+          if (!data) {
+            data = $.data(el, namespace, {
+              open: false,
+              el: $el,
+              config: {},
+              selectedIdx: -1
+            });
+          }
+          data.menu = $el.find(".w-nav-menu");
+          data.links = data.menu.find(".w-nav-link");
+          data.dropdowns = data.menu.find(".w-dropdown");
+          data.dropdownToggle = data.menu.find(".w-dropdown-toggle");
+          data.dropdownList = data.menu.find(".w-dropdown-list");
+          data.button = $el.find(".w-nav-button");
+          data.container = $el.find(".w-container");
+          data.overlayContainerId = "w-nav-overlay-" + i;
+          data.outside = outside(data);
+          var navBrandLink = $el.find(".w-nav-brand");
+          if (navBrandLink && navBrandLink.attr("href") === "/" && navBrandLink.attr("aria-label") == null) {
+            navBrandLink.attr("aria-label", "home");
+          }
+          data.button.attr("style", "-webkit-user-select: text;");
+          if (data.button.attr("aria-label") == null) {
+            data.button.attr("aria-label", "menu");
+          }
+          data.button.attr("role", "button");
+          data.button.attr("tabindex", "0");
+          data.button.attr("aria-controls", data.overlayContainerId);
+          data.button.attr("aria-haspopup", "menu");
+          data.button.attr("aria-expanded", "false");
+          data.el.off(namespace);
+          data.button.off(namespace);
+          data.menu.off(namespace);
+          configure(data);
+          if (designer) {
+            removeOverlay(data);
+            data.el.on("setting" + namespace, handler(data));
+          } else {
+            addOverlay(data);
+            data.button.on("click" + namespace, toggle(data));
+            data.menu.on("click" + namespace, "a", navigate(data));
+            data.button.on("keydown" + namespace, makeToggleButtonKeyboardHandler(data));
+            data.el.on("keydown" + namespace, makeLinksKeyboardHandler(data));
+          }
+          resize(i, el);
+        }
+        function teardown(i, el) {
+          var data = $.data(el, namespace);
+          if (data) {
+            removeOverlay(data);
+            $.removeData(el, namespace);
+          }
+        }
+        function removeOverlay(data) {
+          if (!data.overlay) {
+            return;
+          }
+          close(data, true);
+          data.overlay.remove();
+          data.overlay = null;
+        }
+        function addOverlay(data) {
+          if (data.overlay) {
+            return;
+          }
+          data.overlay = $(overlay).appendTo(data.el);
+          data.overlay.attr("id", data.overlayContainerId);
+          data.parent = data.menu.parent();
+          close(data, true);
+        }
+        function configure(data) {
+          var config = {};
+          var old = data.config || {};
+          var animation = config.animation = data.el.attr("data-animation") || "default";
+          config.animOver = /^over/.test(animation);
+          config.animDirect = /left$/.test(animation) ? -1 : 1;
+          if (old.animation !== animation) {
+            data.open && _.defer(reopen, data);
+          }
+          config.easing = data.el.attr("data-easing") || "ease";
+          config.easing2 = data.el.attr("data-easing2") || "ease";
+          var duration = data.el.attr("data-duration");
+          config.duration = duration != null ? Number(duration) : 400;
+          config.docHeight = data.el.attr("data-doc-height");
+          data.config = config;
+        }
+        function handler(data) {
+          return function(evt, options) {
+            options = options || {};
+            var winWidth = $win.width();
+            configure(data);
+            options.open === true && open(data, true);
+            options.open === false && close(data, true);
+            data.open && _.defer(function() {
+              if (winWidth !== $win.width()) {
+                reopen(data);
+              }
+            });
+          };
+        }
+        function makeToggleButtonKeyboardHandler(data) {
+          return function(evt) {
+            switch (evt.keyCode) {
+              case KEY_CODES.SPACE:
+              case KEY_CODES.ENTER: {
+                toggle(data)();
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ESCAPE: {
+                close(data);
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ARROW_RIGHT:
+              case KEY_CODES.ARROW_DOWN:
+              case KEY_CODES.HOME:
+              case KEY_CODES.END: {
+                if (!data.open) {
+                  evt.preventDefault();
+                  return evt.stopPropagation();
+                }
+                if (evt.keyCode === KEY_CODES.END) {
+                  data.selectedIdx = data.links.length - 1;
+                } else {
+                  data.selectedIdx = 0;
+                }
+                focusSelectedLink(data);
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+            }
+          };
+        }
+        function makeLinksKeyboardHandler(data) {
+          return function(evt) {
+            if (!data.open) {
+              return;
+            }
+            data.selectedIdx = data.links.index(document.activeElement);
+            switch (evt.keyCode) {
+              case KEY_CODES.HOME:
+              case KEY_CODES.END: {
+                if (evt.keyCode === KEY_CODES.END) {
+                  data.selectedIdx = data.links.length - 1;
+                } else {
+                  data.selectedIdx = 0;
+                }
+                focusSelectedLink(data);
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ESCAPE: {
+                close(data);
+                data.button.focus();
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ARROW_LEFT:
+              case KEY_CODES.ARROW_UP: {
+                data.selectedIdx = Math.max(-1, data.selectedIdx - 1);
+                focusSelectedLink(data);
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+              case KEY_CODES.ARROW_RIGHT:
+              case KEY_CODES.ARROW_DOWN: {
+                data.selectedIdx = Math.min(data.links.length - 1, data.selectedIdx + 1);
+                focusSelectedLink(data);
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+            }
+          };
+        }
+        function focusSelectedLink(data) {
+          if (data.links[data.selectedIdx]) {
+            var selectedElement = data.links[data.selectedIdx];
+            selectedElement.focus();
+            navigate(selectedElement);
+          }
+        }
+        function reopen(data) {
+          if (!data.open) {
+            return;
+          }
+          close(data, true);
+          open(data, true);
+        }
+        function toggle(data) {
+          return debounce(function() {
+            data.open ? close(data) : open(data);
+          });
+        }
+        function navigate(data) {
+          return function(evt) {
+            var link = $(this);
+            var href = link.attr("href");
+            if (!Webflow.validClick(evt.currentTarget)) {
+              evt.preventDefault();
+              return;
+            }
+            if (href && href.indexOf("#") === 0 && data.open) {
+              close(data);
+            }
+          };
+        }
+        function outside(data) {
+          if (data.outside) {
+            $doc.off("click" + namespace, data.outside);
+          }
+          return function(evt) {
+            var $target = $(evt.target);
+            if (inEditor && $target.closest(".w-editor-bem-EditorOverlay").length) {
+              return;
+            }
+            outsideDebounced(data, $target);
+          };
+        }
+        var outsideDebounced = debounce(function(data, $target) {
+          if (!data.open) {
+            return;
+          }
+          var menu = $target.closest(".w-nav-menu");
+          if (!data.menu.is(menu)) {
+            close(data);
+          }
+        });
+        function resize(i, el) {
+          var data = $.data(el, namespace);
+          var collapsed = data.collapsed = data.button.css("display") !== "none";
+          if (data.open && !collapsed && !designer) {
+            close(data, true);
+          }
+          if (data.container.length) {
+            var updateEachMax = updateMax(data);
+            data.links.each(updateEachMax);
+            data.dropdowns.each(updateEachMax);
+          }
+          if (data.open) {
+            setOverlayHeight(data);
+          }
+        }
+        var maxWidth = "max-width";
+        function updateMax(data) {
+          var containMax = data.container.css(maxWidth);
+          if (containMax === "none") {
+            containMax = "";
+          }
+          return function(i, link) {
+            link = $(link);
+            link.css(maxWidth, "");
+            if (link.css(maxWidth) === "none") {
+              link.css(maxWidth, containMax);
+            }
+          };
+        }
+        function addMenuOpen(i, el) {
+          el.setAttribute("data-nav-menu-open", "");
+        }
+        function removeMenuOpen(i, el) {
+          el.removeAttribute("data-nav-menu-open");
+        }
+        function open(data, immediate) {
+          if (data.open) {
+            return;
+          }
+          data.open = true;
+          data.menu.each(addMenuOpen);
+          data.links.addClass(navbarOpenedLink);
+          data.dropdowns.addClass(navbarOpenedDropdown);
+          data.dropdownToggle.addClass(navbarOpenedDropdownToggle);
+          data.dropdownList.addClass(navbarOpenedDropdownList);
+          data.button.addClass(navbarOpenedButton);
+          var config = data.config;
+          var animation = config.animation;
+          if (animation === "none" || !tram.support.transform || config.duration <= 0) {
+            immediate = true;
+          }
+          var bodyHeight = setOverlayHeight(data);
+          var menuHeight = data.menu.outerHeight(true);
+          var menuWidth = data.menu.outerWidth(true);
+          var navHeight = data.el.height();
+          var navbarEl = data.el[0];
+          resize(0, navbarEl);
+          ix.intro(0, navbarEl);
+          Webflow.redraw.up();
+          if (!designer) {
+            $doc.on("click" + namespace, data.outside);
+          }
+          if (immediate) {
+            complete();
+            return;
+          }
+          var transConfig = "transform " + config.duration + "ms " + config.easing;
+          if (data.overlay) {
+            menuSibling = data.menu.prev();
+            data.overlay.show().append(data.menu);
+          }
+          if (config.animOver) {
+            tram(data.menu).add(transConfig).set({
+              x: config.animDirect * menuWidth,
+              height: bodyHeight
+            }).start({
+              x: 0
+            }).then(complete);
+            data.overlay && data.overlay.width(menuWidth);
+            return;
+          }
+          var offsetY = navHeight + menuHeight;
+          tram(data.menu).add(transConfig).set({
+            y: -offsetY
+          }).start({
+            y: 0
+          }).then(complete);
+          function complete() {
+            data.button.attr("aria-expanded", "true");
+          }
+        }
+        function setOverlayHeight(data) {
+          var config = data.config;
+          var bodyHeight = config.docHeight ? $doc.height() : $body.height();
+          if (config.animOver) {
+            data.menu.height(bodyHeight);
+          } else if (data.el.css("position") !== "fixed") {
+            bodyHeight -= data.el.outerHeight(true);
+          }
+          data.overlay && data.overlay.height(bodyHeight);
+          return bodyHeight;
+        }
+        function close(data, immediate) {
+          if (!data.open) {
+            return;
+          }
+          data.open = false;
+          data.button.removeClass(navbarOpenedButton);
+          var config = data.config;
+          if (config.animation === "none" || !tram.support.transform || config.duration <= 0) {
+            immediate = true;
+          }
+          ix.outro(0, data.el[0]);
+          $doc.off("click" + namespace, data.outside);
+          if (immediate) {
+            tram(data.menu).stop();
+            complete();
+            return;
+          }
+          var transConfig = "transform " + config.duration + "ms " + config.easing2;
+          var menuHeight = data.menu.outerHeight(true);
+          var menuWidth = data.menu.outerWidth(true);
+          var navHeight = data.el.height();
+          if (config.animOver) {
+            tram(data.menu).add(transConfig).start({
+              x: menuWidth * config.animDirect
+            }).then(complete);
+            return;
+          }
+          var offsetY = navHeight + menuHeight;
+          tram(data.menu).add(transConfig).start({
+            y: -offsetY
+          }).then(complete);
+          function complete() {
+            data.menu.height("");
+            tram(data.menu).set({
+              x: 0,
+              y: 0
+            });
+            data.menu.each(removeMenuOpen);
+            data.links.removeClass(navbarOpenedLink);
+            data.dropdowns.removeClass(navbarOpenedDropdown);
+            data.dropdownToggle.removeClass(navbarOpenedDropdownToggle);
+            data.dropdownList.removeClass(navbarOpenedDropdownList);
+            if (data.overlay && data.overlay.children().length) {
+              menuSibling.length ? data.menu.insertAfter(menuSibling) : data.menu.prependTo(data.parent);
+              data.overlay.attr("style", "").hide();
+            }
+            data.el.triggerHandler("w-close");
+            data.button.attr("aria-expanded", "false");
+          }
+        }
+        return api;
+      });
+    }
+  });
+
+  // shared/render/plugins/Slider/webflow-slider.js
+  var require_webflow_slider = __commonJS({
+    "shared/render/plugins/Slider/webflow-slider.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      var IXEvents = require_webflow_ix2_events();
+      var KEY_CODES = {
+        ARROW_LEFT: 37,
+        ARROW_UP: 38,
+        ARROW_RIGHT: 39,
+        ARROW_DOWN: 40,
+        SPACE: 32,
+        ENTER: 13,
+        HOME: 36,
+        END: 35
+      };
+      var FOCUSABLE_SELECTOR = 'a[href], area[href], [role="button"], input, select, textarea, button, iframe, object, embed, *[tabindex], *[contenteditable]';
+      Webflow.define("slider", module.exports = function($, _) {
+        var api = {};
+        var tram = $.tram;
+        var $doc = $(document);
+        var $sliders;
+        var designer;
+        var inApp = Webflow.env();
+        var namespace = ".w-slider";
+        var dot = '<div class="w-slider-dot" data-wf-ignore />';
+        var ariaLiveLabelHtml = '<div aria-live="off" aria-atomic="true" class="w-slider-aria-label" data-wf-ignore />';
+        var forceShow = "w-slider-force-show";
+        var ix = IXEvents.triggers;
+        var fallback;
+        var inRedraw = false;
+        api.ready = function() {
+          designer = Webflow.env("design");
+          init();
+        };
+        api.design = function() {
+          designer = true;
+          setTimeout(init, 1e3);
+        };
+        api.preview = function() {
+          designer = false;
+          init();
+        };
+        api.redraw = function() {
+          inRedraw = true;
+          init();
+          inRedraw = false;
+        };
+        api.destroy = removeListeners;
+        function init() {
+          $sliders = $doc.find(namespace);
+          if (!$sliders.length) {
+            return;
+          }
+          $sliders.each(build);
+          if (fallback) {
+            return;
+          }
+          removeListeners();
+          addListeners();
+        }
+        function removeListeners() {
+          Webflow.resize.off(renderAll);
+          Webflow.redraw.off(api.redraw);
+        }
+        function addListeners() {
+          Webflow.resize.on(renderAll);
+          Webflow.redraw.on(api.redraw);
+        }
+        function renderAll() {
+          $sliders.filter(":visible").each(render);
+        }
+        function build(i, el) {
+          var $el = $(el);
+          var data = $.data(el, namespace);
+          if (!data) {
+            data = $.data(el, namespace, {
+              index: 0,
+              depth: 1,
+              hasFocus: {
+                keyboard: false,
+                mouse: false
+              },
+              el: $el,
+              config: {}
+            });
+          }
+          data.mask = $el.children(".w-slider-mask");
+          data.left = $el.children(".w-slider-arrow-left");
+          data.right = $el.children(".w-slider-arrow-right");
+          data.nav = $el.children(".w-slider-nav");
+          data.slides = data.mask.children(".w-slide");
+          data.slides.each(ix.reset);
+          if (inRedraw) {
+            data.maskWidth = 0;
+          }
+          if ($el.attr("role") === void 0) {
+            $el.attr("role", "region");
+          }
+          if ($el.attr("aria-label") === void 0) {
+            $el.attr("aria-label", "carousel");
+          }
+          var slideViewId = data.mask.attr("id");
+          if (!slideViewId) {
+            slideViewId = "w-slider-mask-" + i;
+            data.mask.attr("id", slideViewId);
+          }
+          if (!designer && !data.ariaLiveLabel) {
+            data.ariaLiveLabel = $(ariaLiveLabelHtml).appendTo(data.mask);
+          }
+          data.left.attr("role", "button");
+          data.left.attr("tabindex", "0");
+          data.left.attr("aria-controls", slideViewId);
+          if (data.left.attr("aria-label") === void 0) {
+            data.left.attr("aria-label", "previous slide");
+          }
+          data.right.attr("role", "button");
+          data.right.attr("tabindex", "0");
+          data.right.attr("aria-controls", slideViewId);
+          if (data.right.attr("aria-label") === void 0) {
+            data.right.attr("aria-label", "next slide");
+          }
+          if (!tram.support.transform) {
+            data.left.hide();
+            data.right.hide();
+            data.nav.hide();
+            fallback = true;
+            return;
+          }
+          data.el.off(namespace);
+          data.left.off(namespace);
+          data.right.off(namespace);
+          data.nav.off(namespace);
+          configure(data);
+          if (designer) {
+            data.el.on("setting" + namespace, handler(data));
+            stopTimer(data);
+            data.hasTimer = false;
+          } else {
+            data.el.on("swipe" + namespace, handler(data));
+            data.left.on("click" + namespace, previousFunction(data));
+            data.right.on("click" + namespace, next(data));
+            data.left.on("keydown" + namespace, keyboardSlideButtonsFunction(data, previousFunction));
+            data.right.on("keydown" + namespace, keyboardSlideButtonsFunction(data, next));
+            data.nav.on("keydown" + namespace, "> div", handler(data));
+            if (data.config.autoplay && !data.hasTimer) {
+              data.hasTimer = true;
+              data.timerCount = 1;
+              startTimer(data);
+            }
+            data.el.on("mouseenter" + namespace, hasFocus(data, true, "mouse"));
+            data.el.on("focusin" + namespace, hasFocus(data, true, "keyboard"));
+            data.el.on("mouseleave" + namespace, hasFocus(data, false, "mouse"));
+            data.el.on("focusout" + namespace, hasFocus(data, false, "keyboard"));
+          }
+          data.nav.on("click" + namespace, "> div", handler(data));
+          if (!inApp) {
+            data.mask.contents().filter(function() {
+              return this.nodeType === 3;
+            }).remove();
+          }
+          var $elHidden = $el.filter(":hidden");
+          $elHidden.addClass(forceShow);
+          var $elHiddenParents = $el.parents(":hidden");
+          $elHiddenParents.addClass(forceShow);
+          if (!inRedraw) {
+            render(i, el);
+          }
+          $elHidden.removeClass(forceShow);
+          $elHiddenParents.removeClass(forceShow);
+        }
+        function configure(data) {
+          var config = {};
+          config.crossOver = 0;
+          config.animation = data.el.attr("data-animation") || "slide";
+          if (config.animation === "outin") {
+            config.animation = "cross";
+            config.crossOver = 0.5;
+          }
+          config.easing = data.el.attr("data-easing") || "ease";
+          var duration = data.el.attr("data-duration");
+          config.duration = duration != null ? parseInt(duration, 10) : 500;
+          if (isAttrTrue(data.el.attr("data-infinite"))) {
+            config.infinite = true;
+          }
+          if (isAttrTrue(data.el.attr("data-disable-swipe"))) {
+            config.disableSwipe = true;
+          }
+          if (isAttrTrue(data.el.attr("data-hide-arrows"))) {
+            config.hideArrows = true;
+          } else if (data.config.hideArrows) {
+            data.left.show();
+            data.right.show();
+          }
+          if (isAttrTrue(data.el.attr("data-autoplay"))) {
+            config.autoplay = true;
+            config.delay = parseInt(data.el.attr("data-delay"), 10) || 2e3;
+            config.timerMax = parseInt(data.el.attr("data-autoplay-limit"), 10);
+            var touchEvents = "mousedown" + namespace + " touchstart" + namespace;
+            if (!designer) {
+              data.el.off(touchEvents).one(touchEvents, function() {
+                stopTimer(data);
+              });
+            }
+          }
+          var arrowWidth = data.right.width();
+          config.edge = arrowWidth ? arrowWidth + 40 : 100;
+          data.config = config;
+        }
+        function isAttrTrue(value) {
+          return value === "1" || value === "true";
+        }
+        function hasFocus(data, focusIn, eventType) {
+          return function(evt) {
+            if (!focusIn) {
+              if ($.contains(data.el.get(0), evt.relatedTarget)) {
+                return;
+              }
+              data.hasFocus[eventType] = focusIn;
+              if (data.hasFocus.mouse && eventType === "keyboard" || data.hasFocus.keyboard && eventType === "mouse") {
+                return;
+              }
+            } else {
+              data.hasFocus[eventType] = focusIn;
+            }
+            if (focusIn) {
+              data.ariaLiveLabel.attr("aria-live", "polite");
+              if (data.hasTimer) {
+                stopTimer(data);
+              }
+            } else {
+              data.ariaLiveLabel.attr("aria-live", "off");
+              if (data.hasTimer) {
+                startTimer(data);
+              }
+            }
+            return;
+          };
+        }
+        function keyboardSlideButtonsFunction(data, directionFunction) {
+          return function(evt) {
+            switch (evt.keyCode) {
+              case KEY_CODES.SPACE:
+              case KEY_CODES.ENTER: {
+                directionFunction(data)();
+                evt.preventDefault();
+                return evt.stopPropagation();
+              }
+            }
+          };
+        }
+        function previousFunction(data) {
+          return function() {
+            change(data, {
+              index: data.index - 1,
+              vector: -1
+            });
+          };
+        }
+        function next(data) {
+          return function() {
+            change(data, {
+              index: data.index + 1,
+              vector: 1
+            });
+          };
+        }
+        function select(data, value) {
+          var found = null;
+          if (value === data.slides.length) {
+            init();
+            layout(data);
+          }
+          _.each(data.anchors, function(anchor, index) {
+            $(anchor.els).each(function(i, el) {
+              if ($(el).index() === value) {
+                found = index;
+              }
+            });
+          });
+          if (found != null) {
+            change(data, {
+              index: found,
+              immediate: true
+            });
+          }
+        }
+        function startTimer(data) {
+          stopTimer(data);
+          var config = data.config;
+          var timerMax = config.timerMax;
+          if (timerMax && data.timerCount++ > timerMax) {
+            return;
+          }
+          data.timerId = window.setTimeout(function() {
+            if (data.timerId == null || designer) {
+              return;
+            }
+            next(data)();
+            startTimer(data);
+          }, config.delay);
+        }
+        function stopTimer(data) {
+          window.clearTimeout(data.timerId);
+          data.timerId = null;
+        }
+        function handler(data) {
+          return function(evt, options) {
+            options = options || {};
+            var config = data.config;
+            if (designer && evt.type === "setting") {
+              if (options.select === "prev") {
+                return previousFunction(data)();
+              }
+              if (options.select === "next") {
+                return next(data)();
+              }
+              configure(data);
+              layout(data);
+              if (options.select == null) {
+                return;
+              }
+              select(data, options.select);
+              return;
+            }
+            if (evt.type === "swipe") {
+              if (config.disableSwipe) {
+                return;
+              }
+              if (Webflow.env("editor")) {
+                return;
+              }
+              if (options.direction === "left") {
+                return next(data)();
+              }
+              if (options.direction === "right") {
+                return previousFunction(data)();
+              }
+              return;
+            }
+            if (data.nav.has(evt.target).length) {
+              var index = $(evt.target).index();
+              if (evt.type === "click") {
+                change(data, {
+                  index
+                });
+              }
+              if (evt.type === "keydown") {
+                switch (evt.keyCode) {
+                  case KEY_CODES.ENTER:
+                  case KEY_CODES.SPACE: {
+                    change(data, {
+                      index
+                    });
+                    evt.preventDefault();
+                    break;
+                  }
+                  case KEY_CODES.ARROW_LEFT:
+                  case KEY_CODES.ARROW_UP: {
+                    focusDot(data.nav, Math.max(index - 1, 0));
+                    evt.preventDefault();
+                    break;
+                  }
+                  case KEY_CODES.ARROW_RIGHT:
+                  case KEY_CODES.ARROW_DOWN: {
+                    focusDot(data.nav, Math.min(index + 1, data.pages));
+                    evt.preventDefault();
+                    break;
+                  }
+                  case KEY_CODES.HOME: {
+                    focusDot(data.nav, 0);
+                    evt.preventDefault();
+                    break;
+                  }
+                  case KEY_CODES.END: {
+                    focusDot(data.nav, data.pages);
+                    evt.preventDefault();
+                    break;
+                  }
+                  default: {
+                    return;
+                  }
+                }
+              }
+            }
+          };
+        }
+        function focusDot($nav, index) {
+          var $active = $nav.children().eq(index).focus();
+          $nav.children().not($active);
+        }
+        function change(data, options) {
+          options = options || {};
+          var config = data.config;
+          var anchors = data.anchors;
+          data.previous = data.index;
+          var index = options.index;
+          var shift = {};
+          if (index < 0) {
+            index = anchors.length - 1;
+            if (config.infinite) {
+              shift.x = -data.endX;
+              shift.from = 0;
+              shift.to = anchors[0].width;
+            }
+          } else if (index >= anchors.length) {
+            index = 0;
+            if (config.infinite) {
+              shift.x = anchors[anchors.length - 1].width;
+              shift.from = -anchors[anchors.length - 1].x;
+              shift.to = shift.from - shift.x;
+            }
+          }
+          data.index = index;
+          var $active = data.nav.children().eq(index).addClass("w-active").attr("aria-pressed", "true").attr("tabindex", "0");
+          data.nav.children().not($active).removeClass("w-active").attr("aria-pressed", "false").attr("tabindex", "-1");
+          if (config.hideArrows) {
+            data.index === anchors.length - 1 ? data.right.hide() : data.right.show();
+            data.index === 0 ? data.left.hide() : data.left.show();
+          }
+          var lastOffsetX = data.offsetX || 0;
+          var offsetX = data.offsetX = -anchors[data.index].x;
+          var resetConfig = {
+            x: offsetX,
+            opacity: 1,
+            visibility: ""
+          };
+          var targets = $(anchors[data.index].els);
+          var prevTargs = $(anchors[data.previous] && anchors[data.previous].els);
+          var others = data.slides.not(targets);
+          var animation = config.animation;
+          var easing = config.easing;
+          var duration = Math.round(config.duration);
+          var vector = options.vector || (data.index > data.previous ? 1 : -1);
+          var fadeRule = "opacity " + duration + "ms " + easing;
+          var slideRule = "transform " + duration + "ms " + easing;
+          targets.find(FOCUSABLE_SELECTOR).removeAttr("tabindex");
+          targets.removeAttr("aria-hidden");
+          targets.find("*").removeAttr("aria-hidden");
+          others.find(FOCUSABLE_SELECTOR).attr("tabindex", "-1");
+          others.attr("aria-hidden", "true");
+          others.find("*").attr("aria-hidden", "true");
+          if (!designer) {
+            targets.each(ix.intro);
+            others.each(ix.outro);
+          }
+          if (options.immediate && !inRedraw) {
+            tram(targets).set(resetConfig);
+            resetOthers();
+            return;
+          }
+          if (data.index === data.previous) {
+            return;
+          }
+          if (!designer) {
+            data.ariaLiveLabel.text(`Slide ${index + 1} of ${anchors.length}.`);
+          }
+          if (animation === "cross") {
+            var reduced = Math.round(duration - duration * config.crossOver);
+            var wait = Math.round(duration - reduced);
+            fadeRule = "opacity " + reduced + "ms " + easing;
+            tram(prevTargs).set({
+              visibility: ""
+            }).add(fadeRule).start({
+              opacity: 0
+            });
+            tram(targets).set({
+              visibility: "",
+              x: offsetX,
+              opacity: 0,
+              zIndex: data.depth++
+            }).add(fadeRule).wait(wait).then({
+              opacity: 1
+            }).then(resetOthers);
+            return;
+          }
+          if (animation === "fade") {
+            tram(prevTargs).set({
+              visibility: ""
+            }).stop();
+            tram(targets).set({
+              visibility: "",
+              x: offsetX,
+              opacity: 0,
+              zIndex: data.depth++
+            }).add(fadeRule).start({
+              opacity: 1
+            }).then(resetOthers);
+            return;
+          }
+          if (animation === "over") {
+            resetConfig = {
+              x: data.endX
+            };
+            tram(prevTargs).set({
+              visibility: ""
+            }).stop();
+            tram(targets).set({
+              visibility: "",
+              zIndex: data.depth++,
+              x: offsetX + anchors[data.index].width * vector
+            }).add(slideRule).start({
+              x: offsetX
+            }).then(resetOthers);
+            return;
+          }
+          if (config.infinite && shift.x) {
+            tram(data.slides.not(prevTargs)).set({
+              visibility: "",
+              x: shift.x
+            }).add(slideRule).start({
+              x: offsetX
+            });
+            tram(prevTargs).set({
+              visibility: "",
+              x: shift.from
+            }).add(slideRule).start({
+              x: shift.to
+            });
+            data.shifted = prevTargs;
+          } else {
+            if (config.infinite && data.shifted) {
+              tram(data.shifted).set({
+                visibility: "",
+                x: lastOffsetX
+              });
+              data.shifted = null;
+            }
+            tram(data.slides).set({
+              visibility: ""
+            }).add(slideRule).start({
+              x: offsetX
+            });
+          }
+          function resetOthers() {
+            targets = $(anchors[data.index].els);
+            others = data.slides.not(targets);
+            if (animation !== "slide") {
+              resetConfig.visibility = "hidden";
+            }
+            tram(others).set(resetConfig);
+          }
+        }
+        function render(i, el) {
+          var data = $.data(el, namespace);
+          if (!data) {
+            return;
+          }
+          if (maskChanged(data)) {
+            return layout(data);
+          }
+          if (designer && slidesChanged(data)) {
+            layout(data);
+          }
+        }
+        function layout(data) {
+          var pages = 1;
+          var offset = 0;
+          var anchor = 0;
+          var width = 0;
+          var maskWidth = data.maskWidth;
+          var threshold = maskWidth - data.config.edge;
+          if (threshold < 0) {
+            threshold = 0;
+          }
+          data.anchors = [{
+            els: [],
+            x: 0,
+            width: 0
+          }];
+          data.slides.each(function(i, el) {
+            if (anchor - offset > threshold) {
+              pages++;
+              offset += maskWidth;
+              data.anchors[pages - 1] = {
+                els: [],
+                x: anchor,
+                width: 0
+              };
+            }
+            width = $(el).outerWidth(true);
+            anchor += width;
+            data.anchors[pages - 1].width += width;
+            data.anchors[pages - 1].els.push(el);
+            var ariaLabel = i + 1 + " of " + data.slides.length;
+            $(el).attr("aria-label", ariaLabel);
+            $(el).attr("role", "group");
+          });
+          data.endX = anchor;
+          if (designer) {
+            data.pages = null;
+          }
+          if (data.nav.length && data.pages !== pages) {
+            data.pages = pages;
+            buildNav(data);
+          }
+          var index = data.index;
+          if (index >= pages) {
+            index = pages - 1;
+          }
+          change(data, {
+            immediate: true,
+            index
+          });
+        }
+        function buildNav(data) {
+          var dots = [];
+          var $dot;
+          var spacing = data.el.attr("data-nav-spacing");
+          if (spacing) {
+            spacing = parseFloat(spacing) + "px";
+          }
+          for (var i = 0, len = data.pages; i < len; i++) {
+            $dot = $(dot);
+            $dot.attr("aria-label", "Show slide " + (i + 1) + " of " + len).attr("aria-pressed", "false").attr("role", "button").attr("tabindex", "-1");
+            if (data.nav.hasClass("w-num")) {
+              $dot.text(i + 1);
+            }
+            if (spacing != null) {
+              $dot.css({
+                "margin-left": spacing,
+                "margin-right": spacing
+              });
+            }
+            dots.push($dot);
+          }
+          data.nav.empty().append(dots);
+        }
+        function maskChanged(data) {
+          var maskWidth = data.mask.width();
+          if (data.maskWidth !== maskWidth) {
+            data.maskWidth = maskWidth;
+            return true;
+          }
+          return false;
+        }
+        function slidesChanged(data) {
+          var slidesWidth = 0;
+          data.slides.each(function(i, el) {
+            slidesWidth += $(el).outerWidth(true);
+          });
+          if (data.slidesWidth !== slidesWidth) {
+            data.slidesWidth = slidesWidth;
+            return true;
+          }
+          return false;
+        }
+        return api;
+      });
+    }
+  });
+
+  // shared/render/plugins/Tabs/webflow-tabs.js
+  var require_webflow_tabs = __commonJS({
+    "shared/render/plugins/Tabs/webflow-tabs.js"(exports, module) {
+      var Webflow = require_webflow_lib();
+      var IXEvents = require_webflow_ix2_events();
+      Webflow.define("tabs", module.exports = function($) {
+        var api = {};
+        var tram = $.tram;
+        var $doc = $(document);
+        var $tabs;
+        var design;
+        var env = Webflow.env;
+        var safari = env.safari;
+        var inApp = env();
+        var tabAttr = "data-w-tab";
+        var paneAttr = "data-w-pane";
+        var namespace = ".w-tabs";
+        var linkCurrent = "w--current";
+        var tabActive = "w--tab-active";
+        var ix = IXEvents.triggers;
+        var inRedraw = false;
+        api.ready = api.design = api.preview = init;
+        api.redraw = function() {
+          inRedraw = true;
+          init();
+          inRedraw = false;
+        };
+        api.destroy = function() {
+          $tabs = $doc.find(namespace);
+          if (!$tabs.length) {
+            return;
+          }
+          $tabs.each(resetIX);
+          removeListeners();
+        };
+        function init() {
+          design = inApp && Webflow.env("design");
+          $tabs = $doc.find(namespace);
+          if (!$tabs.length) {
+            return;
+          }
+          $tabs.each(build);
+          if (Webflow.env("preview") && !inRedraw) {
+            $tabs.each(resetIX);
+          }
+          removeListeners();
+          addListeners();
+        }
+        function removeListeners() {
+          Webflow.redraw.off(api.redraw);
+        }
+        function addListeners() {
+          Webflow.redraw.on(api.redraw);
+        }
+        function resetIX(i, el) {
+          var data = $.data(el, namespace);
+          if (!data) {
+            return;
+          }
+          data.links && data.links.each(ix.reset);
+          data.panes && data.panes.each(ix.reset);
+        }
+        function build(i, el) {
+          var widgetHash = namespace.substr(1) + "-" + i;
+          var $el = $(el);
+          var data = $.data(el, namespace);
+          if (!data) {
+            data = $.data(el, namespace, {
+              el: $el,
+              config: {}
+            });
+          }
+          data.current = null;
+          data.tabIdentifier = widgetHash + "-" + tabAttr;
+          data.paneIdentifier = widgetHash + "-" + paneAttr;
+          data.menu = $el.children(".w-tab-menu");
+          data.links = data.menu.children(".w-tab-link");
+          data.content = $el.children(".w-tab-content");
+          data.panes = data.content.children(".w-tab-pane");
+          data.el.off(namespace);
+          data.links.off(namespace);
+          data.menu.attr("role", "tablist");
+          data.links.attr("tabindex", "-1");
+          configure(data);
+          if (!design) {
+            data.links.on("click" + namespace, linkSelect(data));
+            data.links.on("keydown" + namespace, handleLinkKeydown(data));
+            var $link = data.links.filter("." + linkCurrent);
+            var tab = $link.attr(tabAttr);
+            tab && changeTab(data, {
+              tab,
+              immediate: true
+            });
+          }
+        }
+        function configure(data) {
+          var config = {};
+          config.easing = data.el.attr("data-easing") || "ease";
+          var intro = parseInt(data.el.attr("data-duration-in"), 10);
+          intro = config.intro = intro === intro ? intro : 0;
+          var outro = parseInt(data.el.attr("data-duration-out"), 10);
+          outro = config.outro = outro === outro ? outro : 0;
+          config.immediate = !intro && !outro;
+          data.config = config;
+        }
+        function getActiveTabIdx(data) {
+          var tab = data.current;
+          return Array.prototype.findIndex.call(data.links, (t) => {
+            return t.getAttribute(tabAttr) === tab;
+          }, null);
+        }
+        function linkSelect(data) {
+          return function(evt) {
+            evt.preventDefault();
+            var tab = evt.currentTarget.getAttribute(tabAttr);
+            tab && changeTab(data, {
+              tab
+            });
+          };
+        }
+        function handleLinkKeydown(data) {
+          return function(evt) {
+            var currentIdx = getActiveTabIdx(data);
+            var keyName = evt.key;
+            var keyMap = {
+              ArrowLeft: currentIdx - 1,
+              ArrowUp: currentIdx - 1,
+              ArrowRight: currentIdx + 1,
+              ArrowDown: currentIdx + 1,
+              End: data.links.length - 1,
+              Home: 0
+            };
+            if (!(keyName in keyMap))
+              return;
+            evt.preventDefault();
+            var nextIdx = keyMap[keyName];
+            if (nextIdx === -1) {
+              nextIdx = data.links.length - 1;
+            }
+            if (nextIdx === data.links.length) {
+              nextIdx = 0;
+            }
+            var tabEl = data.links[nextIdx];
+            var tab = tabEl.getAttribute(tabAttr);
+            tab && changeTab(data, {
+              tab
+            });
+          };
+        }
+        function changeTab(data, options) {
+          options = options || {};
+          var config = data.config;
+          var easing = config.easing;
+          var tab = options.tab;
+          if (tab === data.current) {
+            return;
+          }
+          data.current = tab;
+          var currentTab;
+          data.links.each(function(i, el) {
+            var $el = $(el);
+            if (options.immediate || config.immediate) {
+              var pane = data.panes[i];
+              if (!el.id) {
+                el.id = data.tabIdentifier + "-" + i;
+              }
+              if (!pane.id) {
+                pane.id = data.paneIdentifier + "-" + i;
+              }
+              el.href = "#" + pane.id;
+              el.setAttribute("role", "tab");
+              el.setAttribute("aria-controls", pane.id);
+              el.setAttribute("aria-selected", "false");
+              pane.setAttribute("role", "tabpanel");
+              pane.setAttribute("aria-labelledby", el.id);
+            }
+            if (el.getAttribute(tabAttr) === tab) {
+              currentTab = el;
+              $el.addClass(linkCurrent).removeAttr("tabindex").attr({
+                "aria-selected": "true"
+              }).each(ix.intro);
+            } else if ($el.hasClass(linkCurrent)) {
+              $el.removeClass(linkCurrent).attr({
+                tabindex: "-1",
+                "aria-selected": "false"
+              }).each(ix.outro);
+            }
+          });
+          var targets = [];
+          var previous = [];
+          data.panes.each(function(i, el) {
+            var $el = $(el);
+            if (el.getAttribute(tabAttr) === tab) {
+              targets.push(el);
+            } else if ($el.hasClass(tabActive)) {
+              previous.push(el);
+            }
+          });
+          var $targets = $(targets);
+          var $previous = $(previous);
+          if (options.immediate || config.immediate) {
+            $targets.addClass(tabActive).each(ix.intro);
+            $previous.removeClass(tabActive);
+            if (!inRedraw) {
+              Webflow.redraw.up();
+            }
+            return;
+          } else {
+            var x = window.scrollX;
+            var y = window.scrollY;
+            currentTab.focus();
+            window.scrollTo(x, y);
+          }
+          if ($previous.length && config.outro) {
+            $previous.each(ix.outro);
+            tram($previous).add("opacity " + config.outro + "ms " + easing, {
+              fallback: safari
+            }).start({
+              opacity: 0
+            }).then(() => fadeIn(config, $previous, $targets));
+          } else {
+            fadeIn(config, $previous, $targets);
+          }
+        }
+        function fadeIn(config, $previous, $targets) {
+          $previous.removeClass(tabActive).css({
+            opacity: "",
+            transition: "",
+            transform: "",
+            width: "",
+            height: ""
+          });
+          $targets.addClass(tabActive).each(ix.intro);
+          Webflow.redraw.up();
+          if (!config.intro) {
+            return tram($targets).set({
+              opacity: 1
+            });
+          }
+          tram($targets).set({
+            opacity: 0
+          }).redraw().add("opacity " + config.intro + "ms " + config.easing, {
+            fallback: safari
+          }).start({
+            opacity: 1
+          });
+        }
+        return api;
+      });
+    }
+  });
+
   // <stdin>
-  require_webflow_scroll();
-  require_webflow_touch();
+  require_webflow_brand();
   require_webflow_focus_visible();
-  require_webflow_links();
   require_webflow_focus();
   require_webflow_ix2_events();
-  require_webflow_focus_within();
-  require_webflow_brand();
+  require_webflow_ix2();
+  require_webflow_links();
+  require_webflow_scroll();
+  require_webflow_touch();
   require_webflow_dropdown();
-  require_webflow_tabs();
+  require_webflow_forms();
   require_webflow_navbar();
   require_webflow_slider();
-  require_webflow_ix2();
-  require_webflow_forms();
+  require_webflow_tabs();
 })();
 /*!
  * tram.js v0.8.2-global
@@ -14837,5 +14657,5 @@ timm/lib/timm.js:
  * Webflow: Interactions 2.0: Init
  */
 Webflow.require('ix2').init(
-{"events":{"e":{"id":"e","name":"","animationType":"custom","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-248"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"},"targets":[{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1594377367460},"e-2":{"id":"e-2","name":"","animationType":"custom","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-2","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-83"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"},"targets":[{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1594377367461},"e-5":{"id":"e-5","name":"","animationType":"preset","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-5","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-36"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1653740152081},"e-6":{"id":"e-6","name":"","animationType":"preset","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-6","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-98"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1653740152081},"e-7":{"id":"e-7","name":"","animationType":"preset","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-7","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-8"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1659350664060},"e-8":{"id":"e-8","name":"","animationType":"preset","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-8","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-7"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1659350664060},"e-12":{"id":"e-12","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-18","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-33"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-14":{"id":"e-14","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-13","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-15"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-22":{"id":"e-22","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-14","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-36"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796016},"e-25":{"id":"e-25","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-23","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-32"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":true,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017474},"e-29":{"id":"e-29","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-19","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-30"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845487},"e-30":{"id":"e-30","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-21","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-29"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845493},"e-32":{"id":"e-32","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-12","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-25"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017472},"e-33":{"id":"e-33","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-16","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-12"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-36":{"id":"e-36","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-17","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-98"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796017},"e-40":{"id":"e-40","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-29","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-51"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-41":{"id":"e-41","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-32","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-64"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617296456723},"e-42":{"id":"e-42","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-17","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-56"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796017},"e-48":{"id":"e-48","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-25","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-76"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845487},"e-50":{"id":"e-50","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-12","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-55"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017472},"e-53":{"id":"e-53","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-24","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-78"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-54":{"id":"e-54","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-31","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-48"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845493},"e-55":{"id":"e-55","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-23","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-50"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":true,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017474},"e-56":{"id":"e-56","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-14","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-42"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796016},"e-59":{"id":"e-59","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-27","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-41"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617296456720},"e-62":{"id":"e-62","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-30","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-69"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-66":{"id":"e-66","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-34","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-73"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-75":{"id":"e-75","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-33","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-80"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-80":{"id":"e-80","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-35","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-75"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-87":{"id":"e-87","animationType":"custom","eventTypeId":"TAB_ACTIVE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-39","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-88"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".tab-link","originalId":"63f337249f80520010e77908|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"},"targets":[{"selector":".tab-link","originalId":"63f337249f80520010e77908|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1576338323537},"e-88":{"id":"e-88","animationType":"custom","eventTypeId":"TAB_INACTIVE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-40","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-87"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".tab-link","originalId":"63f337249f80520010e77908|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"},"targets":[{"selector":".tab-link","originalId":"63f337249f80520010e77908|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1576338323542},"e-107":{"id":"e-107","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"642449c80076295d690d642a","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"642449c80076295d690d642a","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680271458615},"e-108":{"id":"e-108","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"642449c80076295d690d642a","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"642449c80076295d690d642a","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680275205328},"e-109":{"id":"e-109","name":"","animationType":"custom","eventTypeId":"NAVBAR_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-47","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-110"}},"mediaQueries":["main","medium","small","tiny"],"target":{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1680276278944},"e-110":{"id":"e-110","name":"","animationType":"custom","eventTypeId":"NAVBAR_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-48","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-109"}},"mediaQueries":["main","medium","small","tiny"],"target":{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1680276278946},"e-111":{"id":"e-111","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f8052de54e7791d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052de54e7791d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680960012029},"e-112":{"id":"e-112","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f8052de54e7791d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052de54e7791d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680960019695},"e-113":{"id":"e-113","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f80521518e77917","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80521518e77917","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029086098},"e-114":{"id":"e-114","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f80521518e77917","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80521518e77917","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029105834},"e-115":{"id":"e-115","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f80520b8de7790b","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80520b8de7790b","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029874477},"e-116":{"id":"e-116","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f80520b8de7790b","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80520b8de7790b","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029882674},"e-117":{"id":"e-117","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f80527fece7791b","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80527fece7791b","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298030658},"e-118":{"id":"e-118","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f80527fece7791b","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80527fece7791b","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298038209},"e-119":{"id":"e-119","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f8052083fe7791e","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052083fe7791e","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298099416},"e-120":{"id":"e-120","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f8052083fe7791e","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052083fe7791e","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298108465},"e-121":{"id":"e-121","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f8052ab15e77913","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052ab15e77913","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298297507},"e-122":{"id":"e-122","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f8052ab15e77913","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052ab15e77913","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298304943},"e-123":{"id":"e-123","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f80522393e7791c","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80522393e7791c","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298524334},"e-124":{"id":"e-124","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f80522393e7791c","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80522393e7791c","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298531835},"e-125":{"id":"e-125","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f8052fa1de77915","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052fa1de77915","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298637737},"e-126":{"id":"e-126","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f8052fa1de77915","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f8052fa1de77915","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298645544},"e-127":{"id":"e-127","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"63f337249f80520605e77914","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80520605e77914","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298764498},"e-128":{"id":"e-128","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"63f337249f80520605e77914","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"63f337249f80520605e77914","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298772547},"e-129":{"id":"e-129","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6436aaf90691b42d64b976c0","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6436aaf90691b42d64b976c0","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681304313755},"e-130":{"id":"e-130","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6436aaf90691b42d64b976c0","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6436aaf90691b42d64b976c0","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681304313755},"e-131":{"id":"e-131","name":"","animationType":"custom","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-50","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-132"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".accordion__item.js-accordion-item","originalId":"6436aaf90691b42d64b976c0|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"},"targets":[{"selector":".accordion__item.js-accordion-item","originalId":"6436aaf90691b42d64b976c0|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1681305989076},"e-132":{"id":"e-132","name":"","animationType":"custom","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-51","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-131"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".accordion__item.js-accordion-item","originalId":"6436aaf90691b42d64b976c0|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"},"targets":[{"selector":".accordion__item.js-accordion-item","originalId":"6436aaf90691b42d64b976c0|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1681305989077},"e-133":{"id":"e-133","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6436c3b786cd09321746fd3d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6436c3b786cd09321746fd3d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681310648280},"e-134":{"id":"e-134","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6436c3b786cd09321746fd3d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6436c3b786cd09321746fd3d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681310648280}},"actionLists":{"a":{"id":"a","title":"Open FAQ","actionItemGroups":[{"actionItems":[{"id":"a-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":500,"target":{"id":"63f337249f80520010e77908|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}}]},{"actionItems":[{"id":"a-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"easeOut","duration":300,"target":{},"widthUnit":"PX","heightUnit":"AUTO","locked":false}},{"id":"a-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":300,"target":{"id":"63f337249f80520010e77908|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1590674197279},"a-2":{"id":"a-2","title":"Close FAQ","actionItemGroups":[{"actionItems":[{"id":"a-2-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"easeOut","duration":300,"target":{},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}},{"id":"a-2-n-2","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":300,"target":{"id":"63f337249f80520010e77908|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1590674197279},"a-5":{"id":"a-5","title":"mobile menu open 5","actionItemGroups":[{"actionItems":[{"id":"a-5-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}}]},{"actionItems":[{"id":"a-5-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"easeInOut","duration":500,"target":{},"xValue":0,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-5-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":0,"unit":""}},{"id":"a-5-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-5-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-5-n-6","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":-7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-5-n-7","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":-40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1630652490590},"a-6":{"id":"a-6","title":"mobile menu open 6","actionItemGroups":[{"actionItems":[{"id":"a-6-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-6-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":1,"unit":""}},{"id":"a-6-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-6-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-6-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-6-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1630652490590},"a-7":{"id":"a-7","title":"mobile menu open 7","actionItemGroups":[{"actionItems":[{"id":"a-7-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}}]},{"actionItems":[{"id":"a-7-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"easeInOut","duration":500,"target":{},"xValue":0,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-7-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":0,"unit":""}},{"id":"a-7-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-7-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-7-n-6","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":-7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-7-n-7","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":-40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1630652490590},"a-8":{"id":"a-8","title":"mobile menu open 8","actionItemGroups":[{"actionItems":[{"id":"a-8-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-8-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":1,"unit":""}},{"id":"a-8-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-8-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-8-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-8-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1630652490590},"a-18":{"id":"a-18","title":"Dropdown Bg [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-18-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-18-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-18-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-18-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-18-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-18-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-13":{"id":"a-13","title":"Hide Dropdown Tablet [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-13-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-14":{"id":"a-14","title":"Dropdown Card Bg [IN]","actionItemGroups":[{"actionItems":[{"id":"a-14-n","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":1.1,"yValue":1.1,"locked":true}},{"id":"a-14-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-14-n-3","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"ease","duration":200,"target":{},"xValue":1,"yValue":1,"locked":true}},{"id":"a-14-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1609671800251},"a-23":{"id":"a-23","title":"Dropdown Columns [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-23-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":120,"target":{},"value":0,"unit":""}},{"id":"a-23-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":120,"target":{},"yValue":-20,"xUnit":"PX","yUnit":"px","zUnit":"PX"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617789022649},"a-19":{"id":"a-19","title":"Dropdown Caret [IN]","actionItemGroups":[{"actionItems":[{"id":"a-19-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-21":{"id":"a-21","title":"Dropdown Caret [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-21-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-12":{"id":"a-12","title":"Dropdown Columns [IN]","actionItemGroups":[{"actionItems":[{"id":"a-12-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-12-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-20,"xUnit":"PX","yUnit":"px","zUnit":"PX"}}]},{"actionItems":[{"id":"a-12-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":200,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":200,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-12-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":250,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-6","actionTypeId":"STYLE_OPACITY","config":{"delay":250,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-12-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":350,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":350,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617789022649},"a-16":{"id":"a-16","title":"Dropdown Bg [IN]","actionItemGroups":[{"actionItems":[{"id":"a-16-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-16-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-16-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-16-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-16-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-16-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-16-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-17":{"id":"a-17","title":"Dropdown Card Bg [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-17-n","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"ease","duration":200,"target":{},"xValue":1.1,"yValue":1.1,"locked":true}},{"id":"a-17-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{},"value":0,"unit":""}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609671800251},"a-29":{"id":"a-29","title":"Hide Dropdown Tablet [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-29-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-32":{"id":"a-32","title":"Dropdown Card Title [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-32-n","actionTypeId":"STYLE_TEXT_COLOR","config":{"delay":0,"easing":"ease","duration":200,"target":{},"globalSwatchId":"","rValue":21,"bValue":38,"gValue":27,"aValue":1}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617292792609},"a-25":{"id":"a-25","title":"Dropdown Caret [IN] 2","actionItemGroups":[{"actionItems":[{"id":"a-25-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-24":{"id":"a-24","title":"Dropdown Bg [IN] 2","actionItemGroups":[{"actionItems":[{"id":"a-24-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-24-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-24-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-24-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-24-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-24-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-24-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-31":{"id":"a-31","title":"Dropdown Caret [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-31-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-27":{"id":"a-27","title":"Dropdown Card Purple Title [IN]","actionItemGroups":[{"actionItems":[{"id":"a-27-n","actionTypeId":"STYLE_TEXT_COLOR","config":{"delay":0,"easing":"ease","duration":200,"target":{},"globalSwatchId":"","rValue":121,"bValue":255,"gValue":110,"aValue":1}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617292648624},"a-30":{"id":"a-30","title":"Dropdown Bg [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-30-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-30-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-30-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-30-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-30-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-30-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-34":{"id":"a-34","title":"Hide Dropdown Tablet [OUT] 3","actionItemGroups":[{"actionItems":[{"id":"a-34-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-33":{"id":"a-33","title":"Dropdown Bg [IN] 3","actionItemGroups":[{"actionItems":[{"id":"a-33-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-33-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-33-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-33-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-33-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-33-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-33-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-35":{"id":"a-35","title":"Dropdown Bg [OUT] 3","actionItemGroups":[{"actionItems":[{"id":"a-35-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-35-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-35-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-35-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-35-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-35-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-39":{"id":"a-39","title":"tab-active","actionItemGroups":[{"actionItems":[{"id":"a-39-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":0,"unit":""}},{"id":"a-39-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}}]},{"actionItems":[{"id":"a-39-n-9","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutCubic","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"widthUnit":"PX","heightUnit":"AUTO","locked":false}},{"id":"a-39-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"inOutCubic","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1576338435670},"a-40":{"id":"a-40","title":"tab-inactive","actionItemGroups":[{"actionItems":[{"id":"a-40-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}},{"id":"a-40-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":0,"unit":""}},{"id":"a-40-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":0,"target":{},"zValue":20,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-40-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":0,"unit":""}},{"id":"a-40-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":0,"target":{},"yValue":40,"xUnit":"PX","yUnit":"PX","zUnit":"PX"}},{"id":"a-40-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":0,"target":{},"zValue":-10,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-40-n-7","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":0,"unit":""}},{"id":"a-40-n-8","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":0,"target":{},"yValue":-40,"xUnit":"PX","yUnit":"PX","zUnit":"PX"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1576338435670},"a-45":{"id":"a-45","title":"navbar-scroll-web","continuousParameterGroups":[{"id":"a-45-p","type":"SCROLL_PROGRESS","parameterLabel":"Scroll","continuousActionGroups":[{"keyframe":0,"actionItems":[{"id":"a-45-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0,"unit":""}},{"id":"a-45-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":2.56,"widthUnit":"PX","heightUnit":"em","locked":false}}]},{"keyframe":1,"actionItems":[{"id":"a-45-n-4","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":1.5,"widthUnit":"PX","heightUnit":"em","locked":false}},{"id":"a-45-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0.9,"unit":""}}]}]}],"createdOn":1680271460988},"a-46":{"id":"a-46","title":"navbar-scroll-mobile","continuousParameterGroups":[{"id":"a-46-p","type":"SCROLL_PROGRESS","parameterLabel":"Scroll","continuousActionGroups":[{"keyframe":0,"actionItems":[{"id":"a-46-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0,"unit":""}},{"id":"a-46-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":1.5,"widthUnit":"PX","heightUnit":"em","locked":false}}]},{"keyframe":1,"actionItems":[{"id":"a-46-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":0.7,"widthUnit":"PX","heightUnit":"em","locked":false}},{"id":"a-46-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0.9,"unit":""}}]}]}],"createdOn":1680271460988},"a-47":{"id":"a-47","title":"navbar-open","actionItemGroups":[{"actionItems":[{"id":"a-47-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutQuint","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-middle","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8063"]},"widthValue":0,"widthUnit":"px","heightUnit":"PX","locked":false}},{"id":"a-47-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"yValue":-8,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-47-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"zValue":45,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-47-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"yValue":8,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-47-n-5","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"zValue":-45,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1680276297565},"a-48":{"id":"a-48","title":"navbar-close","actionItemGroups":[{"actionItems":[{"id":"a-48-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutQuint","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-middle","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8063"]},"widthValue":24,"widthUnit":"px","heightUnit":"PX","locked":false}},{"id":"a-48-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-48-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-48-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-48-n-5","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1680276297565},"a-50":{"id":"a-50","title":"Open FAQ rfb","actionItemGroups":[{"actionItems":[{"id":"a-50-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-50-n-5","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"none"}},{"id":"a-50-n-7","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-50-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-50-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"ease","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"flex"}},{"id":"a-50-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1590674197279},"a-51":{"id":"a-51","title":"Open FAQ rfb close","actionItemGroups":[{"actionItems":[{"id":"a-51-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-51-n-2","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"ease","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"none"}},{"id":"a-51-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":0,"unit":""}}]}],"useFirstGroupAsInitialState":false,"createdOn":1590674197279}},"site":{"mediaQueries":[{"key":"main","min":992,"max":10000},{"key":"medium","min":768,"max":991},{"key":"small","min":480,"max":767},{"key":"tiny","min":0,"max":479}]}}
+{"events":{"e":{"id":"e","name":"","animationType":"custom","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-248"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"},"targets":[{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1594377367460},"e-2":{"id":"e-2","name":"","animationType":"custom","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-2","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-83"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"},"targets":[{"selector":".faq-button","originalId":"6037b144a3cadfa707bfb92b|ffbbd58d-23c2-3198-56ff-d6d9de958ccc","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1594377367461},"e-5":{"id":"e-5","name":"","animationType":"preset","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-5","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-36"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1653740152081},"e-6":{"id":"e-6","name":"","animationType":"preset","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-6","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-98"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"88640dd5-654f-c29c-ed21-a63021852dec","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1653740152081},"e-7":{"id":"e-7","name":"","animationType":"preset","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-7","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-8"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1659350664060},"e-8":{"id":"e-8","name":"","animationType":"preset","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-8","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-7"}},"mediaQueries":["medium","small","tiny"],"target":{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"5c8dc894-21a8-2a54-a88a-1815b2c108ef","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1659350664060},"e-12":{"id":"e-12","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-18","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-33"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-14":{"id":"e-14","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-13","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-15"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-22":{"id":"e-22","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-14","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-36"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796016},"e-25":{"id":"e-25","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-23","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-32"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":true,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017474},"e-29":{"id":"e-29","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-19","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-30"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845487},"e-30":{"id":"e-30","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-21","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-29"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845493},"e-32":{"id":"e-32","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-12","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-25"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017472},"e-33":{"id":"e-33","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-16","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-12"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown","originalId":"6358d248b69c45515d271317|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-36":{"id":"e-36","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-17","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-98"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card","originalId":"6358d248b69c45515d271317|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796017},"e-40":{"id":"e-40","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-29","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-51"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-41":{"id":"e-41","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-32","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-64"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617296456723},"e-42":{"id":"e-42","name":"","animationType":"custom","eventTypeId":"MOUSE_OUT","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-17","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-56"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796017},"e-48":{"id":"e-48","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-25","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-76"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845487},"e-50":{"id":"e-50","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-12","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-55"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017472},"e-53":{"id":"e-53","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-24","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-78"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-54":{"id":"e-54","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-31","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-48"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609660845493},"e-55":{"id":"e-55","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-23","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-50"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":true,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617789017474},"e-56":{"id":"e-56","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-14","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-42"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"6358ea904a2963731a84d5c3|0bde0a34-cad4-63eb-fca7-2ef22aa4f3f2","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1609671796016},"e-59":{"id":"e-59","name":"","animationType":"custom","eventTypeId":"MOUSE_OVER","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-27","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-41"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-card-2","originalId":"41a3ada1-7b3d-6379-6e58-d16798b7c1f9","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617296456720},"e-62":{"id":"e-62","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-30","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-69"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-66":{"id":"e-66","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-34","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-73"}},"mediaQueries":["medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617886499928},"e-75":{"id":"e-75","name":"","animationType":"custom","eventTypeId":"DROPDOWN_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-33","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-80"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758884},"e-80":{"id":"e-80","name":"","animationType":"custom","eventTypeId":"DROPDOWN_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-35","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-75"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"},"targets":[{"selector":".dropdown-2","originalId":"6358ea904a2963731a84d5c3|28084622-3018-edf7-688e-146dd4dd3b7a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1617884758886},"e-87":{"id":"e-87","animationType":"custom","eventTypeId":"TAB_ACTIVE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-39","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-88"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".tab-link","originalId":"6446bf57f8980f45326ce2b2|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"},"targets":[{"selector":".tab-link","originalId":"6446bf57f8980f45326ce2b2|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1576338323537},"e-88":{"id":"e-88","animationType":"custom","eventTypeId":"TAB_INACTIVE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-40","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-87"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".tab-link","originalId":"6446bf57f8980f45326ce2b2|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"},"targets":[{"selector":".tab-link","originalId":"6446bf57f8980f45326ce2b2|981487d5-459f-1b27-e705-9da27ee0ca2a","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1576338323542},"e-107":{"id":"e-107","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980fba316ce257","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fba316ce257","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680271458615},"e-108":{"id":"e-108","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980fba316ce257","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fba316ce257","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680275205328},"e-109":{"id":"e-109","name":"","animationType":"custom","eventTypeId":"NAVBAR_OPEN","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-47","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-110"}},"mediaQueries":["main","medium","small","tiny"],"target":{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1680276278944},"e-110":{"id":"e-110","name":"","animationType":"custom","eventTypeId":"NAVBAR_CLOSE","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-48","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-109"}},"mediaQueries":["main","medium","small","tiny"],"target":{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]},"targets":[{"id":"56da26f6-4135-f88f-1f1f-847e3db1ab57","appliesTo":"ELEMENT","styleBlockIds":[]}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1680276278946},"e-111":{"id":"e-111","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f2e756ce2b3","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f2e756ce2b3","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680960012029},"e-112":{"id":"e-112","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f2e756ce2b3","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f2e756ce2b3","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1680960019695},"e-113":{"id":"e-113","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f243a6ce29a","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f243a6ce29a","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029086098},"e-114":{"id":"e-114","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f243a6ce29a","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f243a6ce29a","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029105834},"e-115":{"id":"e-115","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f6ac26ce28d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f6ac26ce28d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029874477},"e-116":{"id":"e-116","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f6ac26ce28d","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f6ac26ce28d","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681029882674},"e-117":{"id":"e-117","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980fb1f56ce2af","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fb1f56ce2af","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298030658},"e-118":{"id":"e-118","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980fb1f56ce2af","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fb1f56ce2af","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298038209},"e-119":{"id":"e-119","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f534f6ce2c6","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f534f6ce2c6","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298099416},"e-120":{"id":"e-120","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f534f6ce2c6","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f534f6ce2c6","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298108465},"e-121":{"id":"e-121","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980fe9956ce296","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fe9956ce296","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298297507},"e-122":{"id":"e-122","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980fe9956ce296","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980fe9956ce296","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298304943},"e-123":{"id":"e-123","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f68c36ce2b1","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f68c36ce2b1","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298524334},"e-124":{"id":"e-124","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f68c36ce2b1","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f68c36ce2b1","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298531835},"e-125":{"id":"e-125","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f0c206ce298","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f0c206ce298","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298637737},"e-126":{"id":"e-126","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f0c206ce298","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f0c206ce298","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298645544},"e-127":{"id":"e-127","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f66d06ce297","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f66d06ce297","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298764498},"e-128":{"id":"e-128","name":"","animationType":"custom","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f66d06ce297","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f66d06ce297","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681298772547},"e-129":{"id":"e-129","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f13176ce2b4","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f13176ce2b4","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681304313755},"e-130":{"id":"e-130","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f13176ce2b4","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f13176ce2b4","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681304313755},"e-131":{"id":"e-131","name":"","animationType":"custom","eventTypeId":"MOUSE_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-50","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-132"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".accordion__item.js-accordion-item","originalId":"6446bf57f8980f13176ce2b4|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"},"targets":[{"selector":".accordion__item.js-accordion-item","originalId":"6446bf57f8980f13176ce2b4|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1681305989076},"e-132":{"id":"e-132","name":"","animationType":"custom","eventTypeId":"MOUSE_SECOND_CLICK","action":{"id":"","actionTypeId":"GENERAL_START_ACTION","config":{"delay":0,"easing":"","duration":0,"actionListId":"a-51","affectedElements":{},"playInReverse":false,"autoStopEventId":"e-131"}},"mediaQueries":["main","medium","small","tiny"],"target":{"selector":".accordion__item.js-accordion-item","originalId":"6446bf57f8980f13176ce2b4|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"},"targets":[{"selector":".accordion__item.js-accordion-item","originalId":"6446bf57f8980f13176ce2b4|e50c0bb4-1e8c-584b-a92a-19d99ea4cb96","appliesTo":"CLASS"}],"config":{"loop":false,"playInReverse":false,"scrollOffsetValue":null,"scrollOffsetUnit":null,"delay":null,"direction":null,"effectIn":null},"createdOn":1681305989077},"e-133":{"id":"e-133","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-45","affectedElements":{},"duration":0}},"mediaQueries":["main","medium","small"],"target":{"id":"6446bf57f8980f1dc86ce290","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f1dc86ce290","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-45-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681310648280},"e-134":{"id":"e-134","name":"","animationType":"preset","eventTypeId":"PAGE_SCROLL","action":{"id":"","actionTypeId":"GENERAL_CONTINUOUS_ACTION","config":{"actionListId":"a-46","affectedElements":{},"duration":0}},"mediaQueries":["tiny"],"target":{"id":"6446bf57f8980f1dc86ce290","appliesTo":"PAGE","styleBlockIds":[]},"targets":[{"id":"6446bf57f8980f1dc86ce290","appliesTo":"PAGE","styleBlockIds":[]}],"config":[{"continuousParameterGroupId":"a-46-p","smoothing":50,"startsEntering":true,"addStartOffset":false,"addOffsetValue":50,"startsExiting":false,"addEndOffset":false,"endOffsetValue":50}],"createdOn":1681310648280}},"actionLists":{"a":{"id":"a","title":"Open FAQ","actionItemGroups":[{"actionItems":[{"id":"a-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":500,"target":{"id":"6446bf57f8980f45326ce2b2|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}}]},{"actionItems":[{"id":"a-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"easeOut","duration":300,"target":{},"widthUnit":"PX","heightUnit":"AUTO","locked":false}},{"id":"a-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":300,"target":{"id":"6446bf57f8980f45326ce2b2|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1590674197279},"a-2":{"id":"a-2","title":"Close FAQ","actionItemGroups":[{"actionItems":[{"id":"a-2-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"easeOut","duration":300,"target":{},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}},{"id":"a-2-n-2","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":300,"target":{"id":"6446bf57f8980f45326ce2b2|a10b6001-54cd-1d96-122c-474c98cdc3ac"},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1590674197279},"a-5":{"id":"a-5","title":"mobile menu open 5","actionItemGroups":[{"actionItems":[{"id":"a-5-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}}]},{"actionItems":[{"id":"a-5-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"easeInOut","duration":500,"target":{},"xValue":0,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-5-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":0,"unit":""}},{"id":"a-5-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-5-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-5-n-6","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":-7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-5-n-7","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":-40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1630652490590},"a-6":{"id":"a-6","title":"mobile menu open 6","actionItemGroups":[{"actionItems":[{"id":"a-6-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-6-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":1,"unit":""}},{"id":"a-6-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-6-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-6-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-6-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1630652490590},"a-7":{"id":"a-7","title":"mobile menu open 7","actionItemGroups":[{"actionItems":[{"id":"a-7-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}}]},{"actionItems":[{"id":"a-7-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"easeInOut","duration":500,"target":{},"xValue":0,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-7-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":0,"unit":""}},{"id":"a-7-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-7-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-7-n-6","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":-7,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-7-n-7","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":-40,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":true,"createdOn":1630652490590},"a-8":{"id":"a-8","title":"mobile menu open 8","actionItemGroups":[{"actionItems":[{"id":"a-8-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":-500,"xUnit":"px","yUnit":"PX","zUnit":"PX"}},{"id":"a-8-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".line-2","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3263"]},"value":1,"unit":""}},{"id":"a-8-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-8-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-1","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3262"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-8-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-8-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".line-3","selectorGuids":["70a76504-ccba-015a-ef50-f3f0fb4c3264"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1630652490590},"a-18":{"id":"a-18","title":"Dropdown Bg [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-18-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-18-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-18-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-18-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-18-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-18-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-13":{"id":"a-13","title":"Hide Dropdown Tablet [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-13-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-14":{"id":"a-14","title":"Dropdown Card Bg [IN]","actionItemGroups":[{"actionItems":[{"id":"a-14-n","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"","duration":500,"target":{},"xValue":1.1,"yValue":1.1,"locked":true}},{"id":"a-14-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-14-n-3","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"ease","duration":200,"target":{},"xValue":1,"yValue":1,"locked":true}},{"id":"a-14-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1609671800251},"a-23":{"id":"a-23","title":"Dropdown Columns [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-23-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":120,"target":{},"value":0,"unit":""}},{"id":"a-23-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":120,"target":{},"yValue":-20,"xUnit":"PX","yUnit":"px","zUnit":"PX"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617789022649},"a-19":{"id":"a-19","title":"Dropdown Caret [IN]","actionItemGroups":[{"actionItems":[{"id":"a-19-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-21":{"id":"a-21","title":"Dropdown Caret [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-21-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-12":{"id":"a-12","title":"Dropdown Columns [IN]","actionItemGroups":[{"actionItems":[{"id":"a-12-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-12-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-20,"xUnit":"PX","yUnit":"px","zUnit":"PX"}}]},{"actionItems":[{"id":"a-12-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":200,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":200,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-12-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":250,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-6","actionTypeId":"STYLE_OPACITY","config":{"delay":250,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-12-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":350,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-12-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":350,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617789022649},"a-16":{"id":"a-16","title":"Dropdown Bg [IN]","actionItemGroups":[{"actionItems":[{"id":"a-16-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-16-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-16-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-16-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-16-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-16-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-16-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-16-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-17":{"id":"a-17","title":"Dropdown Card Bg [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-17-n","actionTypeId":"TRANSFORM_SCALE","config":{"delay":0,"easing":"ease","duration":200,"target":{},"xValue":1.1,"yValue":1.1,"locked":true}},{"id":"a-17-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":200,"target":{},"value":0,"unit":""}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609671800251},"a-29":{"id":"a-29","title":"Hide Dropdown Tablet [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-29-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-32":{"id":"a-32","title":"Dropdown Card Title [OUT]","actionItemGroups":[{"actionItems":[{"id":"a-32-n","actionTypeId":"STYLE_TEXT_COLOR","config":{"delay":0,"easing":"ease","duration":200,"target":{},"globalSwatchId":"","rValue":21,"bValue":38,"gValue":27,"aValue":1}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617292792609},"a-25":{"id":"a-25","title":"Dropdown Caret [IN] 2","actionItemGroups":[{"actionItems":[{"id":"a-25-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-24":{"id":"a-24","title":"Dropdown Bg [IN] 2","actionItemGroups":[{"actionItems":[{"id":"a-24-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-24-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-24-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-24-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-24-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-24-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-24-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-24-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-31":{"id":"a-31","title":"Dropdown Caret [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-31-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":[0.4,0,0.2,0.01],"duration":200,"target":{},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1609660435429},"a-27":{"id":"a-27","title":"Dropdown Card Purple Title [IN]","actionItemGroups":[{"actionItems":[{"id":"a-27-n","actionTypeId":"STYLE_TEXT_COLOR","config":{"delay":0,"easing":"ease","duration":200,"target":{},"globalSwatchId":"","rValue":121,"bValue":255,"gValue":110,"aValue":1}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617292648624},"a-30":{"id":"a-30","title":"Dropdown Bg [OUT] 2","actionItemGroups":[{"actionItems":[{"id":"a-30-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-30-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-30-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-30-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-30-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-30-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-34":{"id":"a-34","title":"Hide Dropdown Tablet [OUT] 3","actionItemGroups":[{"actionItems":[{"id":"a-34-n","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617886235721},"a-33":{"id":"a-33","title":"Dropdown Bg [IN] 3","actionItemGroups":[{"actionItems":[{"id":"a-33-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-33-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":500,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}},{"id":"a-33-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-33-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"block"}}]},{"actionItems":[{"id":"a-33-n-7","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-33-n-9","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":0,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-33-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}},{"id":"a-33-n-11","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":450,"target":{},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1617884761528},"a-35":{"id":"a-35","title":"Dropdown Bg [OUT] 3","actionItemGroups":[{"actionItems":[{"id":"a-35-n","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-35-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-35-n-3","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"yValue":-100,"xUnit":"PX","yUnit":"%","zUnit":"PX"}},{"id":"a-35-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}},{"id":"a-35-n-5","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":[0,0,0.16,0.96],"duration":400,"target":{},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-35-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":"none"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1617884761528},"a-39":{"id":"a-39","title":"tab-active","actionItemGroups":[{"actionItems":[{"id":"a-39-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":0,"unit":""}},{"id":"a-39-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}}]},{"actionItems":[{"id":"a-39-n-9","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutCubic","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"widthUnit":"PX","heightUnit":"AUTO","locked":false}},{"id":"a-39-n-10","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"inOutCubic","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1576338435670},"a-40":{"id":"a-40","title":"tab-inactive","actionItemGroups":[{"actionItems":[{"id":"a-40-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"heightValue":0,"widthUnit":"PX","heightUnit":"PX","locked":false}},{"id":"a-40-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".tab_text-wrapperss","selectorGuids":["5fe62ea5-5f56-bf57-94a1-26fc505c8ce2"]},"value":0,"unit":""}},{"id":"a-40-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":0,"target":{},"zValue":20,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-40-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":0,"unit":""}},{"id":"a-40-n-5","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":0,"target":{},"yValue":40,"xUnit":"PX","yUnit":"PX","zUnit":"PX"}},{"id":"a-40-n-6","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":0,"target":{},"zValue":-10,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-40-n-7","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":0,"target":{},"value":0,"unit":""}},{"id":"a-40-n-8","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"","duration":0,"target":{},"yValue":-40,"xUnit":"PX","yUnit":"PX","zUnit":"PX"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1576338435670},"a-45":{"id":"a-45","title":"navbar-scroll-web","continuousParameterGroups":[{"id":"a-45-p","type":"SCROLL_PROGRESS","parameterLabel":"Scroll","continuousActionGroups":[{"keyframe":0,"actionItems":[{"id":"a-45-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0,"unit":""}},{"id":"a-45-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":2.56,"widthUnit":"PX","heightUnit":"em","locked":false}}]},{"keyframe":1,"actionItems":[{"id":"a-45-n-4","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":1.5,"widthUnit":"PX","heightUnit":"em","locked":false}},{"id":"a-45-n-2","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0.9,"unit":""}}]}]}],"createdOn":1680271460988},"a-46":{"id":"a-46","title":"navbar-scroll-mobile","continuousParameterGroups":[{"id":"a-46-p","type":"SCROLL_PROGRESS","parameterLabel":"Scroll","continuousActionGroups":[{"keyframe":0,"actionItems":[{"id":"a-46-n","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0,"unit":""}},{"id":"a-46-n-2","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":1.5,"widthUnit":"PX","heightUnit":"em","locked":false}}]},{"keyframe":1,"actionItems":[{"id":"a-46-n-3","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-padding","selectorGuids":["0edb6b89-b77d-b1db-b3ae-a4018cf540a2"]},"heightValue":0.7,"widthUnit":"PX","heightUnit":"em","locked":false}},{"id":"a-46-n-4","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"selector":".nav-bg-color","selectorGuids":["d2fdade2-be7a-cc78-1144-bad97b3217f4"]},"value":0.9,"unit":""}}]}]}],"createdOn":1680271460988},"a-47":{"id":"a-47","title":"navbar-open","actionItemGroups":[{"actionItems":[{"id":"a-47-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutQuint","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-middle","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8063"]},"widthValue":0,"widthUnit":"px","heightUnit":"PX","locked":false}},{"id":"a-47-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"yValue":-8,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-47-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"zValue":45,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-47-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"yValue":8,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-47-n-5","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"zValue":-45,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1680276297565},"a-48":{"id":"a-48","title":"navbar-close","actionItemGroups":[{"actionItems":[{"id":"a-48-n","actionTypeId":"STYLE_SIZE","config":{"delay":0,"easing":"inOutQuint","duration":200,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-middle","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8063"]},"widthValue":24,"widthUnit":"px","heightUnit":"PX","locked":false}},{"id":"a-48-n-2","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-48-n-3","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-bottom","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8065"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-48-n-4","actionTypeId":"TRANSFORM_MOVE","config":{"delay":0,"easing":"inOutQuint","duration":400,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"yValue":0,"xUnit":"PX","yUnit":"px","zUnit":"PX"}},{"id":"a-48-n-5","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":600,"target":{"useEventTarget":"CHILDREN","selector":".menu-icon_line-top","selectorGuids":["c92b7dd2-ee66-1865-9262-4487f21a8062"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}}]}],"useFirstGroupAsInitialState":false,"createdOn":1680276297565},"a-50":{"id":"a-50","title":"Open FAQ rfb","actionItemGroups":[{"actionItems":[{"id":"a-50-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-50-n-5","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"none"}},{"id":"a-50-n-7","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":0,"unit":""}}]},{"actionItems":[{"id":"a-50-n-4","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":300,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":180,"xUnit":"DEG","yUnit":"DEG","zUnit":"deg"}},{"id":"a-50-n-6","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"ease","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"flex"}},{"id":"a-50-n-8","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":1,"unit":""}}]}],"useFirstGroupAsInitialState":true,"createdOn":1590674197279},"a-51":{"id":"a-51","title":"Open FAQ rfb close","actionItemGroups":[{"actionItems":[{"id":"a-51-n","actionTypeId":"TRANSFORM_ROTATE","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".icon-embed-xxsmall","selectorGuids":["63c323fe-35ca-1e5c-23ae-a862b89f3bd9"]},"zValue":0,"xUnit":"DEG","yUnit":"DEG","zUnit":"DEG"}},{"id":"a-51-n-2","actionTypeId":"GENERAL_DISPLAY","config":{"delay":0,"easing":"ease","duration":0,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":"none"}},{"id":"a-51-n-3","actionTypeId":"STYLE_OPACITY","config":{"delay":0,"easing":"ease","duration":500,"target":{"useEventTarget":"CHILDREN","selector":".accordion-body.js-accordion-body","selectorGuids":["b44a31c4-1df9-a131-6a82-2290da721b8f","b44a31c4-1df9-a131-6a82-2290da721b95"]},"value":0,"unit":""}}]}],"useFirstGroupAsInitialState":false,"createdOn":1590674197279}},"site":{"mediaQueries":[{"key":"main","min":992,"max":10000},{"key":"medium","min":768,"max":991},{"key":"small","min":480,"max":767},{"key":"tiny","min":0,"max":479}]}}
 );
