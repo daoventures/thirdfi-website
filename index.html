@@ -459,7 +459,7 @@ a {
                 <div class="bold-17px">Number of users</div>
               </div>
             </div>
-            <div class="number-line"></div>
+            <!-- <div class="number-line"></div>
             <div class="metric">
               <div id="api-calls" class="bold-34px spinner"><span class="counterup">0</span></div>
               <div class="bg-text-gradient">
@@ -472,12 +472,19 @@ a {
               <div class="bg-text-gradient">
                 <div class="bold-17px">Total Transactions</div>
               </div>
-            </div>
+            </div> -->
             <div class="number-line"></div>
             <div class="metric">
               <div id="tx-vol" class="bold-34px spinner"><span class="counterup">$0</span></div>
               <div class="bg-text-gradient">
                 <div class="bold-17px">Transaction Volume</div>
+              </div>
+            </div>
+            <div class="number-line"></div>
+            <div class="metric">
+              <div id="revenue" class="bold-34px spinner"><span class="counterup">$0</span></div>
+              <div class="bg-text-gradient">
+                <div class="bold-17px">Revenue</div>
               </div>
             </div>
           </div>
@@ -1044,10 +1051,40 @@ $('.w-dropdown').each(function() {
     span.classList.remove('spinner');
     span.style.color = "#71767d";
   }
+  async function getRevenue() {
+    var span = document.getElementById("revenue");
+    if (counts && counts.revenue) {
+      // if count is available in local storage, update the span with the saved count
+      span.innerHTML = `$${counts.revenue.toLocaleString()}`;
+      span.classList.remove("spinner");
+      span.style.color = "#71767d";
+      return;
+    }
+    try {
+      var result = await axios.get(`${API_URL}/revenue`);
+      var { data } = result.data;
+      var formattedCount = data.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+      if (counts && counts.txVol) {
+        // update the count object in local storage
+        counts.revenue = data;
+      } else {
+        // create a new count object in local storage
+        counts = { revenue: data, ...counts };
+      }
+      // save the count object to local storage
+      await localStorage.setItem("counts", JSON.stringify(counts));
+      span.innerHTML = `$${formattedCount}`;
+    } catch (ex) {
+    	span.innerHTML = "$59,425.20";
+    }
+    span.classList.remove('spinner');
+    span.style.color = "#71767d";
+  }
   getUserCount();
-  getApiCalls();
-  getTxCount();
+  // getApiCalls();
+  // getTxCount();
   getTxVol();
+  getRevenue();
 </script>
   <script>
 /*!
